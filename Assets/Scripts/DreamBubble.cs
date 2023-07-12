@@ -11,7 +11,6 @@ public class DreamBubble : BasePoppable
     [SerializeField] private float popExplosionLifeSpan = 0.5f;
     private float gravityScale = -20f;
 
-    private bool canPop = true;
     private bool inflated = false;
 
     [SerializeField] private GameObject dreamBubbleVisual;
@@ -27,6 +26,7 @@ public class DreamBubble : BasePoppable
 
     private void Awake()
     {
+        canPop = true;
         //hide popExplosionRender
         Renderer[] popExplosionRendererArray = dB_popExplosionVisual.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer renderer in popExplosionRendererArray)
@@ -210,16 +210,6 @@ public class DreamBubble : BasePoppable
 
     }
 
-    public override bool GetCanPop()
-    {
-        //prevent stackoverflow
-        return canPop;
-    }
-
-    public void SetCanPop()
-    {
-        
-    }
 
     
 }
