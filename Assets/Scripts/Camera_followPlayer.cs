@@ -9,6 +9,7 @@ public class Camera_followPlayer : MonoBehaviour
 {
     // Start is called before the first frame update
     [SerializeField] Player player;
+    [SerializeField] Vector3 camIniPos;
 
     private CinemachineVirtualCamera vCam;
 
@@ -17,7 +18,7 @@ public class Camera_followPlayer : MonoBehaviour
     {
         vCam = GetComponent<CinemachineVirtualCamera>();
         //hardcoded position
-        transform.position = new Vector3(0, 65, -45);
+        transform.position = camIniPos;
     }
 
     private void Update()
