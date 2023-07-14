@@ -1,11 +1,11 @@
 fileFormatVersion: 2
-guid: db523799e069e104aa1eebf204aef63b
+guid: d635ddbb0cadae1419665f684f557651
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
   externalObjects: {}
   materials:
-    materialImportMode: 0
+    materialImportMode: 2
     materialName: 0
     materialSearch: 1
     materialLocation: 1
@@ -33,11 +33,11 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: testAni
-      takeName: testAni
-      internalID: 4324416101835706769
+      name: Ani_ChibiBase_Idle
+      takeName: Ani_ChibiBase_Idle
+      internalID: -9026828027131080749
       firstFrame: 0
-      lastFrame: 30
+      lastFrame: 47
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -120,11 +120,11 @@ ModelImporter:
     legStretch: 0.05
     feetSpacing: 0
     globalScale: 1
-    rootMotionBoneName: Root_BINDJNT
+    rootMotionBoneName: chibiBase_001:Root_BINDJNT
     hasTranslationDoF: 0
     hasExtraRoot: 0
     skeletonHasParents: 1
-  lastHumanDescriptionAvatarSource: {fileID: 9000000, guid: b2b9fa43f764dba4587d91151a07282c,
+  lastHumanDescriptionAvatarSource: {fileID: 9000000, guid: eb468542308c93543992984e01379810,
     type: 3}
   autoGenerateAvatarMappingIfUnspecified: 1
   animationType: 2

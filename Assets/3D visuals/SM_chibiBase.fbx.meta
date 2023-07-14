@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: b2b9fa43f764dba4587d91151a07282c
+guid: eb468542308c93543992984e01379810
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -91,7 +91,7 @@ ModelImporter:
     legStretch: 0.05
     feetSpacing: 0
     globalScale: 1
-    rootMotionBoneName: Root_BINDJNT
+    rootMotionBoneName: chibiBase_001:Root_BINDJNT
     hasTranslationDoF: 0
     hasExtraRoot: 0
     skeletonHasParents: 1
