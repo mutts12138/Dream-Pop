@@ -6,17 +6,24 @@ using UnityEngine.UIElements;
 
 public class Player : MonoBehaviour
 {
-    [SerializeField] private float moveSpeed = 7f;
-    private float rotateSpeed = 15f;
-    private float jumpAcc = 25f;
-    private float gravityAcc = -100f;
-    private bool isGrounded = true;
     [SerializeField] private GameInput gameInput;
     [SerializeField] private DreamBubble dreamBubble;
 
+    //player stats
     private float playerRadius = 0.75f;
     private float playerHeight = 3f;
+
+    private float moveSpeed = 15f;
+    private float rotateSpeed = 15f;
+    private float jumpAcc = 25f;
+    private float gravityAcc = -100f;
+    
+
+    //player state
+    private bool isRunning;
+    private bool isGrounded = true;
     private float verticalVelocity = 0f;
+
 
     private void Start()
     {
@@ -70,7 +77,6 @@ public class Player : MonoBehaviour
             {
                 //test z only
                 Vector3 moveDirZ = new Vector3(0, 0, moveDir.z);
-        
                 canMove = !Physics.CapsuleCast(capsuleBotPoint, capsuleTopPoint, capsuleRadius, moveDirZ, moveMaxDistance);
                 if (canMove)
                 {
@@ -84,7 +90,11 @@ public class Player : MonoBehaviour
         {
             //execute movement
             transform.position += moveDir * moveMaxDistance;
+            
         }
+
+        //set animation state
+        isRunning = moveDir != Vector3.zero;
     }
 
 
@@ -171,5 +181,10 @@ public class Player : MonoBehaviour
             HandleVerticalVelocity();
             isGrounded = false;
         }
+    }
+
+    public bool GetIsRunning()
+    {
+        return isRunning;
     }
 }

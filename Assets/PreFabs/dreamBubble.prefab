@@ -352,6 +352,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 014816d8c0422f54784106367b1b0def, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  canPop: 0
   popTimer: 3
   popPowerDistance: 10
   popExplosionLifeSpan: 0.5
@@ -649,7 +650,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 8252161261903087661}
   m_Father: {fileID: 2138272724771972102}

@@ -41,12 +41,11 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5743604719478548044}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cd5d074206d5ef34e8df8d41992d8553, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 15
   gameInput: {fileID: 2036137837950689712, guid: bd6ad984a380c9c4dbe7ec4fb7bd5ce6,
     type: 3}
   dreamBubble: {fileID: 2119159842293962190, guid: 21e96035b739faa46b012741a81d945d,
@@ -83,6 +82,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5237953837757194722}
+  - component: {fileID: 855022057526758653}
+  - component: {fileID: 3298553538864423414}
   m_Layer: 0
   m_Name: player_visual
   m_TagString: Untagged
@@ -106,6 +107,40 @@ Transform:
   m_Father: {fileID: 4178322504002562081}
   m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &855022057526758653
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8735901562253790601}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: eb468542308c93543992984e01379810, type: 3}
+  m_Controller: {fileID: 9100000, guid: 1419c84ac8db93f479f058b6b92dc9eb, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 1
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &3298553538864423414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8735901562253790601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70b3738b2caa1264bacb20d72c111ac3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 8745314787293019194}
 --- !u!1001 &5718008925604455233
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -199,7 +234,8 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: 1419c84ac8db93f479f058b6b92dc9eb, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5866666021909216657, guid: eb468542308c93543992984e01379810, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
