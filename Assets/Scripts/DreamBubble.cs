@@ -153,10 +153,10 @@ public class DreamBubble : BasePoppable
         Ray rayDown = new Ray(offsetTransformPosition, new Vector3(0, 0, -1));
         Ray rayLeft = new Ray(offsetTransformPosition, new Vector3(-1, 0, 0));
         Ray rayRight = new Ray(offsetTransformPosition, new Vector3(1, 0, 0));
-        Ray rayBelow = new Ray(offsetTransformPosition, new Vector3(0,-1,0));
+        //Ray rayBelow = new Ray(offsetTransformPosition, new Vector3(0,-1,0));
 
 
-        Ray[] ray4Directions = { rayUp, rayDown, rayLeft, rayRight, rayBelow };
+        Ray[] ray4Directions = { rayUp, rayDown, rayLeft, rayRight};
 
         int layerNumber = 6;
         int layerMask;
