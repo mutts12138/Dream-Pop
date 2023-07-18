@@ -6,6 +6,6 @@ public class HardBlock : Block
 {
     private void Awake()
     {
-        canPop = false;
+        SetCanPop(false);
     }
 }
