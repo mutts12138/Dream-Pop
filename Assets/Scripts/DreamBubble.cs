@@ -197,11 +197,12 @@ public class DreamBubble : BasePoppable
 
         //explosionRange[]: 0:up, 1:down, 2:left, 3:right
 
+        const float popExplosionVisualSize = 1f;
         //visual
-        dB_popExplosionUpVisual.transform.localScale += new Vector3(0.1f, 0.1f, explosionRanges[0] - 1f);
-        dB_popExplosionDownVisual.transform.localScale += new Vector3(0.1f, 0.1f, explosionRanges[1] - 1f);
-        dB_popExplosionLeftVisual.transform.localScale += new Vector3(explosionRanges[2] - 1f, 0.1f, 0.1f);
-        dB_popExplosionRightVisual.transform.localScale += new Vector3(explosionRanges[3] - 1f, 0.1f, 0.1f);
+        dB_popExplosionUpVisual.transform.localScale += new Vector3(popExplosionVisualSize, popExplosionVisualSize, explosionRanges[0] - 1f);
+        dB_popExplosionDownVisual.transform.localScale += new Vector3(popExplosionVisualSize, popExplosionVisualSize, explosionRanges[1] - 1f);
+        dB_popExplosionLeftVisual.transform.localScale += new Vector3(explosionRanges[2] - 1f, popExplosionVisualSize, popExplosionVisualSize);
+        dB_popExplosionRightVisual.transform.localScale += new Vector3(explosionRanges[3] - 1f, popExplosionVisualSize, popExplosionVisualSize);
 
         //hitbox
         
@@ -223,47 +224,58 @@ public class DreamBubble : BasePoppable
 
     private void popExplosionApplyHit()
     {
-        
+        Quaternion newRotation = new Quaternion(1, 0, 0, 0);
+        Vector3 newCenter = new Vector3(0, 0, 0);
+        Vector3 newHalfExtent = new Vector3(0, 0, 0);
 
         //player  mask
         int layerNumber = 3;
         int layerMask;
         layerMask = 1 << layerNumber;
 
-        int directionCount = 0;
-
-        float explosionLifeTime = 5f;
-
-        //hitbox
-
-        while (explosionLifeTime > 0)
-        {
-            foreach (float explosionRange in explosionRanges)
-            {
-
-                //explosionRange[]: 0:up, 1:down, 2:left, 3:right 
-                Quaternion newRotation = new Quaternion(0f, 0f, 0f, 1f);
-
-                foreach (Collider collider in Physics.OverlapBox(transform.position, new Vector3(1, 1, explosionRange), newRotation, layerMask))
-                {
-                    //check if gameobject is player
-                    if (collider.TryGetComponent(out Player player))
-                    {
-                        if (player.GetIsAsleep() == false)
-                        {
-                            player.SetIsAsleep(true);
-                            Debug.Log("playerHit");
-                        }
-                    }
-
-                }
-                directionCount++;
-            }
-
-            explosionLifeTime -= Time.deltaTime;
-        }
-
+        //horizontal and vertical hitbox
         
+        for (int i = 0; i < 2; i++)
+        {
+
+            //explosionRange[]: 0:up, 1:down, 2:left, 3:right 
+ 
+            if (i == 0)
+            {
+                //vertical
+                newRotation = Quaternion.Euler(0, 0, 0);
+                newCenter = new Vector3(transform.position.x, transform.position.y +1f, transform.position.z + ((explosionRanges[0] - explosionRanges[1])/2));
+                newHalfExtent = new Vector3(1, 1, (explosionRanges[0] + explosionRanges[1])/2);
+            }
+            else
+            {
+                //horizontal
+                newRotation = Quaternion.Euler(0, 90, 0);
+                newCenter = new Vector3(transform.position.x + ((explosionRanges[3] - explosionRanges[2])/2), transform.position.y +1f, transform.position.z);
+                newHalfExtent = new Vector3(1, 1, (explosionRanges[3] + explosionRanges[2]) / 2);
+
+            }
+            
+                
+            
+            
+            
+
+            foreach (Collider collider in Physics.OverlapBox(newCenter, newHalfExtent, newRotation, layerMask))
+            {
+                //check if gameobject is player
+                if (collider.TryGetComponent(out Player player))
+                {
+                    if (player.GetIsAsleep() == false)
+                    {
+                        player.SetIsAsleep(true);
+                        Debug.Log("playerHit");
+                    }
+                }
+
+            }
+            
+        }
 
 
         //check item

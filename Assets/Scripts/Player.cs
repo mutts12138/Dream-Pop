@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 
 public class Player : MonoBehaviour
 {
+    //underscore the private variables.
     [SerializeField] private GameInput gameInput;
     [SerializeField] private DreamBubble dreamBubble;
 
@@ -13,6 +14,7 @@ public class Player : MonoBehaviour
     [SerializeField] private float teamNumber;
 
     //player stats
+    //should organize in struct
     private float playerRadius = 0.75f;
     private float playerHeight = 3f;
 
