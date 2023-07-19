@@ -10,7 +10,7 @@ public class Block : BasePoppable
 
     private void Awake()
     {
-        canPop = true;
+        SetCanPop(true);
     }
 
     private void Update()
@@ -34,7 +34,7 @@ public class Block : BasePoppable
     }
     public override void Pop()
     {
-        canPop = false;
+        SetCanPop(false);
         Destroy(gameObject);
     }
 

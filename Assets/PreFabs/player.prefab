@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4178322504002562081}
   - component: {fileID: 8745314787293019194}
   - component: {fileID: 9030978610478910566}
-  m_Layer: 8
+  m_Layer: 3
   m_Name: player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -50,6 +50,7 @@ MonoBehaviour:
     type: 3}
   dreamBubble: {fileID: 2119159842293962190, guid: 21e96035b739faa46b012741a81d945d,
     type: 3}
+  teamNumber: 0
 --- !u!136 &9030978610478910566
 CapsuleCollider:
   m_ObjectHideFlags: 0

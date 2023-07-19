@@ -352,10 +352,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 014816d8c0422f54784106367b1b0def, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  canPop: 0
   popTimer: 3
   popPowerDistance: 10
-  popExplosionLifeSpan: 0.5
+  popExplosionLifeSpan: 1
   dreamBubbleVisual: {fileID: 1804468367950011726}
   dB_popExplosionVisual: {fileID: 166704739063755044}
   dB_popExplosionUpVisual: {fileID: 8905419548421510266}
