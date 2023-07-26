@@ -354,7 +354,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   popTimer: 3
   popPowerDistance: 10
-  popExplosionLifeSpan: 1
+  popExplosionLifeSpan: 0.5
   dreamBubbleVisual: {fileID: 1804468367950011726}
   dB_popExplosionVisual: {fileID: 166704739063755044}
   dB_popExplosionUpVisual: {fileID: 8905419548421510266}
