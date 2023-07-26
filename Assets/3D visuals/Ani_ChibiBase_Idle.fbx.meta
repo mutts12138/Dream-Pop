@@ -120,7 +120,7 @@ ModelImporter:
     legStretch: 0.05
     feetSpacing: 0
     globalScale: 1
-    rootMotionBoneName: chibiBase_001:Root_BINDJNT
+    rootMotionBoneName: chibiBase:Root_BINDJNT
     hasTranslationDoF: 0
     hasExtraRoot: 0
     skeletonHasParents: 1

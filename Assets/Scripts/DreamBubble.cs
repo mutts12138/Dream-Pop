@@ -8,7 +8,7 @@ public class DreamBubble : BasePoppable
 {
     [SerializeField] private float popTimer = 3f;
     [SerializeField] private float popPowerDistance = 10f;
-    [SerializeField] private float popExplosionLifeSpan = 1f;
+    [SerializeField] private float popExplosionLifeSpan = 0.25f;
     private float gravityScale = -20f;
 
     private bool inflated = false;
@@ -70,9 +70,12 @@ public class DreamBubble : BasePoppable
         }
         else
         {
-            popExplosionApplyHit();
-
             popExplosionLifeSpan -= Time.deltaTime;
+            if (popExplosionLifeSpan > 0.15)
+            {
+                popExplosionApplyHit();
+            }
+            
             if (popExplosionLifeSpan < 0)
             {
                 Destroy(gameObject);
@@ -197,7 +200,7 @@ public class DreamBubble : BasePoppable
 
         //explosionRange[]: 0:up, 1:down, 2:left, 3:right
 
-        const float popExplosionVisualSize = 1f;
+        const float popExplosionVisualSize = 0.75f;
         //visual
         dB_popExplosionUpVisual.transform.localScale += new Vector3(popExplosionVisualSize, popExplosionVisualSize, explosionRanges[0] - 1f);
         dB_popExplosionDownVisual.transform.localScale += new Vector3(popExplosionVisualSize, popExplosionVisualSize, explosionRanges[1] - 1f);
@@ -237,7 +240,8 @@ public class DreamBubble : BasePoppable
         
         for (int i = 0; i < 2; i++)
         {
-
+            const float halfExtentXY = 0.75f;
+            
             //explosionRange[]: 0:up, 1:down, 2:left, 3:right 
  
             if (i == 0)
@@ -245,14 +249,14 @@ public class DreamBubble : BasePoppable
                 //vertical
                 newRotation = Quaternion.Euler(0, 0, 0);
                 newCenter = new Vector3(transform.position.x, transform.position.y +1f, transform.position.z + ((explosionRanges[0] - explosionRanges[1])/2));
-                newHalfExtent = new Vector3(1, 1, (explosionRanges[0] + explosionRanges[1])/2);
+                newHalfExtent = new Vector3(halfExtentXY, halfExtentXY, (explosionRanges[0] + explosionRanges[1])/2);
             }
             else
             {
                 //horizontal
                 newRotation = Quaternion.Euler(0, 90, 0);
                 newCenter = new Vector3(transform.position.x + ((explosionRanges[3] - explosionRanges[2])/2), transform.position.y +1f, transform.position.z);
-                newHalfExtent = new Vector3(1, 1, (explosionRanges[3] + explosionRanges[2]) / 2);
+                newHalfExtent = new Vector3(halfExtentXY, halfExtentXY, (explosionRanges[3] + explosionRanges[2]) / 2);
 
             }
             
@@ -269,7 +273,7 @@ public class DreamBubble : BasePoppable
                     if (player.GetIsAsleep() == false)
                     {
                         player.SetIsAsleep(true);
-                        Debug.Log("playerHit");
+                        //Debug.Log("playerHit");
                     }
                 }
 
