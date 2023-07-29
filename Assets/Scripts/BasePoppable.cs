@@ -6,7 +6,7 @@ public class BasePoppable : MonoBehaviour
 {
     //virtual vs abstract?
 
-    public bool canPop;
+    private bool canPop;
     public virtual void Pop() { }
 
     public virtual bool GetCanPop() 

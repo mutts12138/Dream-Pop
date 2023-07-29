@@ -6,6 +6,8 @@ using UnityEngine.UIElements;
 
 public class DB_popExplosion : MonoBehaviour
 {
+    //THIS IS NOT IN USE?
+    
     //visual
     
 
@@ -25,7 +27,10 @@ public class DB_popExplosion : MonoBehaviour
         {
             if(objT.name == "DB_popExplosion_up")
             {
+                //visual placeholder
                 objT.localScale += new Vector3(0.75f, 0.75f, explosionRange[0] - 1f);
+                //Hit all players, items
+
             }
             if (objT.name == "DB_popExplosion_down")
             {
@@ -44,5 +49,6 @@ public class DB_popExplosion : MonoBehaviour
         
         
     }
+
 
 }

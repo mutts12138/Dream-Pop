@@ -6,6 +6,6 @@ public class SoftBlock : Block
 {
     private void Awake()
     {
-        canPop = true;
+        SetCanPop(true);
     }
 }

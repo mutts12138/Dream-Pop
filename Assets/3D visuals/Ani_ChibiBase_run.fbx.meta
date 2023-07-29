@@ -36,8 +36,8 @@ ModelImporter:
       name: Ani_ChibiBase_run
       takeName: Ani_ChibiBase_run
       internalID: -2737896157265958935
-      firstFrame: 0
-      lastFrame: 11
+      firstFrame: 1000
+      lastFrame: 1011
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -45,7 +45,7 @@ ModelImporter:
       loop: 0
       hasAdditiveReferencePose: 0
       loopTime: 1
-      loopBlend: 1
+      loopBlend: 0
       loopBlendOrientation: 0
       loopBlendPositionY: 0
       loopBlendPositionXZ: 0
@@ -60,7 +60,7 @@ ModelImporter:
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
-      additiveReferencePoseFrame: 0
+      additiveReferencePoseFrame: 1000
     isReadable: 0
   meshes:
     lODScreenPercentages: []
@@ -120,7 +120,7 @@ ModelImporter:
     legStretch: 0.05
     feetSpacing: 0
     globalScale: 1
-    rootMotionBoneName: chibiBase_001:Root_BINDJNT
+    rootMotionBoneName: chibiBase:Root_BINDJNT
     hasTranslationDoF: 0
     hasExtraRoot: 0
     skeletonHasParents: 1

@@ -8,7 +8,7 @@ public class DreamBubble : BasePoppable
 {
     [SerializeField] private float popTimer = 3f;
     [SerializeField] private float popPowerDistance = 10f;
-    [SerializeField] private float popExplosionLifeSpan = 0.5f;
+    [SerializeField] private float popExplosionLifeSpan = 0.25f;
     private float gravityScale = -20f;
 
     private bool inflated = false;
@@ -22,11 +22,11 @@ public class DreamBubble : BasePoppable
     [SerializeField] private GameObject dB_popExplosionLeftVisual;
     [SerializeField] private GameObject dB_popExplosionRightVisual;
 
-
+    private float[] explosionRanges;
 
     private void Awake()
     {
-        canPop = true;
+        SetCanPop(true);
         //hide popExplosionRender
         Renderer[] popExplosionRendererArray = dB_popExplosionVisual.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer renderer in popExplosionRendererArray)
@@ -40,7 +40,7 @@ public class DreamBubble : BasePoppable
         //int layerNumber = 7;
         //int layerMask;
         //layerMask = 1 << layerNumber;
-        gameObject.layer = LayerMask.NameToLayer("dreamBubbleDeflate");
+        //gameObject.layer = LayerMask.NameToLayer("dreamBubbleDeflate");
 
     }
 
@@ -60,7 +60,7 @@ public class DreamBubble : BasePoppable
     
     private void HandlePopTimer()
     {
-        if (canPop == true)
+        if (GetCanPop() == true)
         {
             popTimer -= Time.deltaTime;
             if (popTimer < 0)
@@ -71,6 +71,11 @@ public class DreamBubble : BasePoppable
         else
         {
             popExplosionLifeSpan -= Time.deltaTime;
+            if (popExplosionLifeSpan > 0.15)
+            {
+                popExplosionApplyHit();
+            }
+            
             if (popExplosionLifeSpan < 0)
             {
                 Destroy(gameObject);
@@ -95,7 +100,7 @@ public class DreamBubble : BasePoppable
 
     private bool CheckPlayerOnBubble()
     {
-        int layerNumber = 8;
+        int layerNumber = 3;
         int layerMask;
         layerMask = 1 << layerNumber;
 
@@ -116,6 +121,7 @@ public class DreamBubble : BasePoppable
     {
         return inflated;
     }
+
     public void InflateBubble()
     {
         //place deflated bubble, visual and collider
@@ -127,10 +133,11 @@ public class DreamBubble : BasePoppable
         dreamBubbleVisual.GetComponent<Transform>().localScale = new Vector3(2, 2, 2);
 
         //set dreambubble's layer to inflated
-        gameObject.layer = LayerMask.NameToLayer("dreamBubble");
+        //gameObject.layer = LayerMask.NameToLayer("dreamBubble");
 
 
         //bring up all player, item up above the dream bubble.
+        /*
         int layerNumber;
         int layerMask;
         layerNumber = 8;
@@ -140,13 +147,14 @@ public class DreamBubble : BasePoppable
         {
             col.gameObject.transform.position += new Vector3(0, 2, 0);
         }
+        */
     }
 
 
     public override void Pop()
     {
         //BUG: sometimes not destroying the block
-        canPop = false;
+        SetCanPop(false);
         gravityScale = 0;
         Vector3 offsetTransformPosition = new Vector3(transform.position.x, transform.position.y + 1f, transform.position.z);
         Ray rayUp = new Ray(offsetTransformPosition, new Vector3(0, 0, 1));
@@ -162,9 +170,9 @@ public class DreamBubble : BasePoppable
         int layerMask;
         layerMask = 1 << layerNumber;
 
-        float[] explosionRange = new float[5];
+        explosionRanges = new float[4];
 
-        //raycast in 5 directions, store obj hit distance in explosionRange[]
+        //raycast in 4 directions, get explosionRange[] for visual and actual hitbox, pop dreambubbles hit
         int counter = 0;
         foreach (Ray ray in ray4Directions)
         {
@@ -172,29 +180,35 @@ public class DreamBubble : BasePoppable
             {
                 if(raycastHit.transform.TryGetComponent(out BasePoppable poppable))
                 {
-                    Debug.Log("got component");
+                    //Debug.Log("got component");
                     if (poppable.GetCanPop() == true)
                     {
-                        Debug.Log("called pop");
+                        //Debug.Log("called pop");
                         poppable.Pop();
                     }
                     
                 }
-                explosionRange[counter] = raycastHit.distance;
+                explosionRanges[counter] = raycastHit.distance;
             }
             else
             {
-                explosionRange[counter] = popPowerDistance;
+                explosionRanges[counter] = popPowerDistance;
             }
             counter++;
         }
 
 
-        //explosionRange[]: 0:up, 1:down, 2:left, 3:right 4:below
-        dB_popExplosionUpVisual.transform.localScale += new Vector3(0.75f, 0.75f, explosionRange[0] - 1f);
-        dB_popExplosionDownVisual.transform.localScale += new Vector3(0.75f, 0.75f, explosionRange[1] - 1f);
-        dB_popExplosionLeftVisual.transform.localScale += new Vector3(explosionRange[2] - 1f, 0.75f, 0.75f);
-        dB_popExplosionRightVisual.transform.localScale += new Vector3(explosionRange[3] - 1f, 0.75f, 0.75f);
+        //explosionRange[]: 0:up, 1:down, 2:left, 3:right
+
+        const float popExplosionVisualSize = 0.75f;
+        //visual
+        dB_popExplosionUpVisual.transform.localScale += new Vector3(popExplosionVisualSize, popExplosionVisualSize, explosionRanges[0] - 1f);
+        dB_popExplosionDownVisual.transform.localScale += new Vector3(popExplosionVisualSize, popExplosionVisualSize, explosionRanges[1] - 1f);
+        dB_popExplosionLeftVisual.transform.localScale += new Vector3(explosionRanges[2] - 1f, popExplosionVisualSize, popExplosionVisualSize);
+        dB_popExplosionRightVisual.transform.localScale += new Vector3(explosionRanges[3] - 1f, popExplosionVisualSize, popExplosionVisualSize);
+
+        //hitbox
+        
 
 
         //dream bubble Renderer.enable = false
@@ -211,5 +225,63 @@ public class DreamBubble : BasePoppable
     }
 
 
-    
+    private void popExplosionApplyHit()
+    {
+        Quaternion newRotation = new Quaternion(1, 0, 0, 0);
+        Vector3 newCenter = new Vector3(0, 0, 0);
+        Vector3 newHalfExtent = new Vector3(0, 0, 0);
+
+        //player  mask
+        int layerNumber = 3;
+        int layerMask;
+        layerMask = 1 << layerNumber;
+
+        //horizontal and vertical hitbox
+        
+        for (int i = 0; i < 2; i++)
+        {
+            const float halfExtentXY = 0.75f;
+            
+            //explosionRange[]: 0:up, 1:down, 2:left, 3:right 
+ 
+            if (i == 0)
+            {
+                //vertical
+                newRotation = Quaternion.Euler(0, 0, 0);
+                newCenter = new Vector3(transform.position.x, transform.position.y +1f, transform.position.z + ((explosionRanges[0] - explosionRanges[1])/2));
+                newHalfExtent = new Vector3(halfExtentXY, halfExtentXY, (explosionRanges[0] + explosionRanges[1])/2);
+            }
+            else
+            {
+                //horizontal
+                newRotation = Quaternion.Euler(0, 90, 0);
+                newCenter = new Vector3(transform.position.x + ((explosionRanges[3] - explosionRanges[2])/2), transform.position.y +1f, transform.position.z);
+                newHalfExtent = new Vector3(halfExtentXY, halfExtentXY, (explosionRanges[3] + explosionRanges[2]) / 2);
+
+            }
+            
+                
+            
+            
+            
+
+            foreach (Collider collider in Physics.OverlapBox(newCenter, newHalfExtent, newRotation, layerMask))
+            {
+                //check if gameobject is player
+                if (collider.TryGetComponent(out Player player))
+                {
+                    if (player.GetIsAsleep() == false)
+                    {
+                        player.SetIsAsleep(true);
+                        //Debug.Log("playerHit");
+                    }
+                }
+
+            }
+            
+        }
+
+
+        //check item
+    }
 }
