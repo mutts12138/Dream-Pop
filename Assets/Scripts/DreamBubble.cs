@@ -9,6 +9,7 @@ public class DreamBubble : BasePoppable
     [SerializeField] private float popTimer = 3f;
     [SerializeField] private float popPowerDistance = 10f;
     [SerializeField] private float popExplosionLifeSpan = 0.25f;
+    private Player player;
     private float gravityScale = -20f;
 
     private bool inflated = false;
@@ -24,6 +25,10 @@ public class DreamBubble : BasePoppable
 
     private float[] explosionRanges;
 
+    public void SetPlayer(Player playerScript)
+    {
+       player = playerScript;
+    }
     private void Awake()
     {
         SetCanPop(true);
@@ -57,6 +62,9 @@ public class DreamBubble : BasePoppable
         }
         
     }
+
+
+
     
     private void HandlePopTimer()
     {
@@ -66,6 +74,7 @@ public class DreamBubble : BasePoppable
             if (popTimer < 0)
             {
                 Pop();
+                
             }
         }
         else
@@ -153,6 +162,8 @@ public class DreamBubble : BasePoppable
 
     public override void Pop()
     {
+        player.BubblePopped();
+  
         //BUG: sometimes not destroying the block
         SetCanPop(false);
         gravityScale = 0;
@@ -221,6 +232,9 @@ public class DreamBubble : BasePoppable
         {
             renderer.enabled = true;
         }
+
+        
+          
 
     }
 

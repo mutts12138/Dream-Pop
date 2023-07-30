@@ -19,6 +19,10 @@ public class Player : MonoBehaviour
     private float playerRadius = 0.5f;
     private float playerHeight = 3f;
 
+    public int maxBubble = 1;
+    private int currentBubble = 0;
+    
+
     private float moveSpeed = 10f;
     private float rotateSpeed = 15f;
 
@@ -51,6 +55,8 @@ public class Player : MonoBehaviour
 
     private void Start()
     {
+            currentBubble = 0;
+
         if(gameInput != null)
         {
             gameInput.OnPlaceBubble += GameInput_OnPlaceBubble;
@@ -60,7 +66,8 @@ public class Player : MonoBehaviour
     }
 
     private void Update()
-    {
+    {   
+    
         if (canMove)
         {
             HandleMovement();
@@ -82,6 +89,7 @@ public class Player : MonoBehaviour
 
     private void GameInput_OnJump(object sender, System.EventArgs e)
     {
+   
         if (canJump)
         {
             if (isGrounded)
@@ -98,35 +106,44 @@ public class Player : MonoBehaviour
     //place bubble
     private void GameInput_OnPlaceBubble(object sender, System.EventArgs e)
     {
-        DreamBubble dreamBubbleTransform;
+        if (currentBubble < maxBubble){
+            currentBubble++;
+            DreamBubble dreamBubbleTransform;
+            
 
-        //check if theres a dreambubble directly beneath the player
-        if (Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 2.01f, transform.position.z), Vector3.down, out RaycastHit raycastHit))
-        {
-            //check and get dreamBubble class
-            if (raycastHit.transform.TryGetComponent(out dreamBubbleTransform))
+
+            //check if theres a dreambubble directly beneath the player
+            if (Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 2.01f, transform.position.z), Vector3.down, out RaycastHit raycastHit))
             {
-                //check if inflated
-                /*if(dreamBubbleTransform.GetInflated() == false)
+                //check and get dreamBubble class
+                if (raycastHit.transform.TryGetComponent(out dreamBubbleTransform))
                 {
-                    dreamBubbleTransform.InflateBubble();
-                }*/
-            }
-            else
-            {
+                    //check if inflated
+                    /*if(dreamBubbleTransform.GetInflated() == false)
+                    {
+                     dreamBubbleTransform.InflateBubble();
+                    }*/
+                }
+                else
+                {
                 //snap dreambubble
-                dreamBubbleTransform = Instantiate(dreamBubble);
-                dreamBubbleTransform.transform.position = new Vector3(MathF.Round(gameObject.transform.position.x / 2) * 2, gameObject.transform.position.y, MathF.Round(gameObject.transform.position.z / 2) * 2);
+                 dreamBubbleTransform = Instantiate(dreamBubble);
+                    dreamBubbleTransform.transform.position = new Vector3(MathF.Round(gameObject.transform.position.x / 2) * 2, gameObject.transform.position.y, MathF.Round(gameObject.transform.position.z / 2) * 2);
+                dreamBubbleTransform.SetPlayer(this);
+                 //no snap dreambubble
+                    /*dreamBubbleTransform = Instantiate(dreamBubble);
+                    dreamBubbleTransform.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
+                    */
+             }
 
-                //no snap dreambubble
-                /*dreamBubbleTransform = Instantiate(dreamBubble);
-                dreamBubbleTransform.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
-                */
+
             }
-
-
         }
 
+    }
+
+    public void BubblePopped(){
+        currentBubble--;
     }
 
     private void HandleMovement()
