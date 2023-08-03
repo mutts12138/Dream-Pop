@@ -1,21 +1,26 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-public class Block : BasePoppable
+public class Block : NetworkBehaviour, Ipoppable
 {
-    
+
+    [SerializeField] private bool canPop = true;
     private float gravityScale = -10f;
 
-    private void Awake()
+    public override void OnNetworkSpawn()
     {
-        SetCanPop(true);
+        if (!IsServer) return;
+        //gameObject.GetComponent<NetworkObject>().Spawn(true);
     }
 
     private void Update()
     {
         HandleGravity();
+        if (!IsServer) return;
+        
     }
 
     private void HandleGravity()
@@ -32,11 +37,21 @@ public class Block : BasePoppable
             
         }
     }
-    public override void Pop()
+    public  void Pop()
     {
         SetCanPop(false);
+        gameObject.GetComponent<NetworkObject>().Despawn();
         Destroy(gameObject);
+        
     }
 
+    public bool GetCanPop()
+    {
+        return canPop;
+    }
 
+    public void SetCanPop(bool poppable)
+    {
+        canPop = poppable;
+    }
 }

@@ -15,15 +15,17 @@ public class PlayerAnimator : MonoBehaviour
 
 
     private void Awake()
-    {
+    { 
         animator = GetComponent <Animator>();
     }
 
    
     void Update()
     {
+        
         animator.SetBool(IS_RUNNING, player.GetIsRunning());
-        animator.SetBool(IS_ASLEEP, player.GetIsAsleep());
-        animator.SetBool(IS_DEAD, player.GetIsDead());
+        animator.SetBool(IS_ASLEEP, player.GetCurrentPlayerState() == Player.PlayerStates.asleep);
+        animator.SetBool(IS_DEAD, player.GetCurrentPlayerState() == Player.PlayerStates.death);
+  
     }
 }

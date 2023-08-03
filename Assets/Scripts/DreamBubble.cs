@@ -2,15 +2,18 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Netcode;
 using UnityEngine;
 
-public class DreamBubble : BasePoppable
+public class DreamBubble : NetworkBehaviour, Ipoppable
 {
     [SerializeField] private float popTimer = 3f;
     [SerializeField] private float popPowerDistance = 10f;
-    [SerializeField] private float popExplosionLifeSpan = 0.25f;
+    private bool popExplosionEnabled = false;
+    private float popExplosionLifeSpan = 0.5f;
     private float gravityScale = -20f;
 
+    private bool canPop = true;
     private bool inflated = false;
 
     [SerializeField] private GameObject dreamBubbleVisual;
@@ -22,9 +25,9 @@ public class DreamBubble : BasePoppable
     [SerializeField] private GameObject dB_popExplosionLeftVisual;
     [SerializeField] private GameObject dB_popExplosionRightVisual;
 
-    private float[] explosionRanges;
+    float[] explosionRanges;
 
-    private void Awake()
+    public override void OnNetworkSpawn()
     {
         SetCanPop(true);
         //hide popExplosionRender
@@ -46,16 +49,14 @@ public class DreamBubble : BasePoppable
 
     private void Update()
     {
-        HandlePopTimer();
-        HandleGravity();
-        if (!inflated)
-        {
-            if (!CheckPlayerOnBubble())
-            {
-                InflateBubble();
-            }
-        }
         
+        if (!IsServer) return;
+        HandleInflateBubble();
+        HandlePopTimer();
+        HandlePopExplosionApplyHit();
+
+
+        HandleGravity();
     }
     
     private void HandlePopTimer()
@@ -68,20 +69,10 @@ public class DreamBubble : BasePoppable
                 Pop();
             }
         }
-        else
-        {
-            popExplosionLifeSpan -= Time.deltaTime;
-            if (popExplosionLifeSpan > 0.15)
-            {
-                popExplosionApplyHit();
-            }
-            
-            if (popExplosionLifeSpan < 0)
-            {
-                Destroy(gameObject);
-            }
-        }
+        
     }
+
+
 
     private void HandleGravity()
     {
@@ -96,6 +87,17 @@ public class DreamBubble : BasePoppable
             transform.position = new Vector3(transform.position.x, Mathf.Floor(transform.position.y), transform.position.z);
         }
         
+    }
+
+    private void HandleInflateBubble()
+    {
+        if (!inflated)
+        {
+            if (!CheckPlayerOnBubble())
+            {
+                InflateBubble();
+            }
+        }
     }
 
     private bool CheckPlayerOnBubble()
@@ -130,7 +132,7 @@ public class DreamBubble : BasePoppable
         //when inflated, everything inside boxcastall get position.y set to this.position.y +1
         inflated = true;
         dreamBubbleVisual.GetComponent<Transform>().localPosition = new Vector3(0, 1, 0);
-        dreamBubbleVisual.GetComponent<Transform>().localScale = new Vector3(2, 2, 2);
+        dreamBubbleVisual.GetComponent<Transform>().localScale = new Vector3(1.5f, 1.5f, 1.5f);
 
         //set dreambubble's layer to inflated
         //gameObject.layer = LayerMask.NameToLayer("dreamBubble");
@@ -151,8 +153,19 @@ public class DreamBubble : BasePoppable
     }
 
 
-    public override void Pop()
+    public void Pop()
     {
+        if (!IsServer) return;
+        explosionRanges = CalculateExplosionRanges();
+        popExplosionEnableVisualClientRpc(explosionRanges);
+
+        popExplosionEnabled = true;
+
+    }
+
+    private float[] CalculateExplosionRanges()
+    {
+        float[] explosionRanges;
         //BUG: sometimes not destroying the block
         SetCanPop(false);
         gravityScale = 0;
@@ -164,7 +177,7 @@ public class DreamBubble : BasePoppable
         //Ray rayBelow = new Ray(offsetTransformPosition, new Vector3(0,-1,0));
 
 
-        Ray[] ray4Directions = { rayUp, rayDown, rayLeft, rayRight};
+        Ray[] ray4Directions = { rayUp, rayDown, rayLeft, rayRight };
 
         int layerNumber = 6;
         int layerMask;
@@ -178,7 +191,7 @@ public class DreamBubble : BasePoppable
         {
             if (Physics.Raycast(ray, out RaycastHit raycastHit, popPowerDistance, layerMask))
             {
-                if(raycastHit.transform.TryGetComponent(out BasePoppable poppable))
+                if (raycastHit.transform.TryGetComponent(out Ipoppable poppable))
                 {
                     //Debug.Log("got component");
                     if (poppable.GetCanPop() == true)
@@ -186,7 +199,7 @@ public class DreamBubble : BasePoppable
                         //Debug.Log("called pop");
                         poppable.Pop();
                     }
-                    
+
                 }
                 explosionRanges[counter] = raycastHit.distance;
             }
@@ -196,21 +209,20 @@ public class DreamBubble : BasePoppable
             }
             counter++;
         }
-
-
         //explosionRange[]: 0:up, 1:down, 2:left, 3:right
+        return explosionRanges;
+    }
 
+    //client does the apply visual
+    [ClientRpc]
+    private void popExplosionEnableVisualClientRpc(float[] explosionRanges)
+    {
         const float popExplosionVisualSize = 0.75f;
         //visual
         dB_popExplosionUpVisual.transform.localScale += new Vector3(popExplosionVisualSize, popExplosionVisualSize, explosionRanges[0] - 1f);
         dB_popExplosionDownVisual.transform.localScale += new Vector3(popExplosionVisualSize, popExplosionVisualSize, explosionRanges[1] - 1f);
         dB_popExplosionLeftVisual.transform.localScale += new Vector3(explosionRanges[2] - 1f, popExplosionVisualSize, popExplosionVisualSize);
         dB_popExplosionRightVisual.transform.localScale += new Vector3(explosionRanges[3] - 1f, popExplosionVisualSize, popExplosionVisualSize);
-
-        //hitbox
-        
-
-
         //dream bubble Renderer.enable = false
         dreamBubbleVisual.GetComponent<Renderer>().enabled = false;
         //dream bubble collider.enable = false
@@ -221,67 +233,86 @@ public class DreamBubble : BasePoppable
         {
             renderer.enabled = true;
         }
-
     }
 
+    //server does the applyhit
 
-    private void popExplosionApplyHit()
+    private void HandlePopExplosionApplyHit()
     {
-        Quaternion newRotation = new Quaternion(1, 0, 0, 0);
-        Vector3 newCenter = new Vector3(0, 0, 0);
-        Vector3 newHalfExtent = new Vector3(0, 0, 0);
-
-        //player  mask
-        int layerNumber = 3;
-        int layerMask;
-        layerMask = 1 << layerNumber;
-
-        //horizontal and vertical hitbox
-        
-        for (int i = 0; i < 2; i++)
+        if (popExplosionEnabled == false) return;
+        if (popExplosionLifeSpan > 0)
         {
-            const float halfExtentXY = 0.75f;
-            
-            //explosionRange[]: 0:up, 1:down, 2:left, 3:right 
- 
-            if (i == 0)
+            if (popExplosionLifeSpan > 0.15)
             {
-                //vertical
-                newRotation = Quaternion.Euler(0, 0, 0);
-                newCenter = new Vector3(transform.position.x, transform.position.y +1f, transform.position.z + ((explosionRanges[0] - explosionRanges[1])/2));
-                newHalfExtent = new Vector3(halfExtentXY, halfExtentXY, (explosionRanges[0] + explosionRanges[1])/2);
-            }
-            else
-            {
-                //horizontal
-                newRotation = Quaternion.Euler(0, 90, 0);
-                newCenter = new Vector3(transform.position.x + ((explosionRanges[3] - explosionRanges[2])/2), transform.position.y +1f, transform.position.z);
-                newHalfExtent = new Vector3(halfExtentXY, halfExtentXY, (explosionRanges[3] + explosionRanges[2]) / 2);
+                Quaternion newRotation = new Quaternion(1, 0, 0, 0);
+                Vector3 newCenter = new Vector3(0, 0, 0);
+                Vector3 newHalfExtent = new Vector3(0, 0, 0);
 
-            }
-            
-                
-            
-            
-            
+                //player  mask
+                int layerNumber = 3;
+                int layerMask;
+                layerMask = 1 << layerNumber;
 
-            foreach (Collider collider in Physics.OverlapBox(newCenter, newHalfExtent, newRotation, layerMask))
-            {
-                //check if gameobject is player
-                if (collider.TryGetComponent(out Player player))
+                //horizontal and vertical hitbox
+
+                for (int i = 0; i < 2; i++)
                 {
-                    if (player.GetIsAsleep() == false)
+                    const float halfExtentXY = 0.75f;
+
+                    //explosionRange[]: 0:up, 1:down, 2:left, 3:right 
+
+                    if (i == 0)
                     {
-                        player.SetIsAsleep(true);
-                        //Debug.Log("playerHit");
+                        //vertical
+                        newRotation = Quaternion.Euler(0, 0, 0);
+                        newCenter = new Vector3(transform.position.x, transform.position.y + 1f, transform.position.z + ((explosionRanges[0] - explosionRanges[1]) / 2));
+                        newHalfExtent = new Vector3(halfExtentXY, halfExtentXY, (explosionRanges[0] + explosionRanges[1]) / 2);
                     }
+                    else
+                    {
+                        //horizontal
+                        newRotation = Quaternion.Euler(0, 90, 0);
+                        newCenter = new Vector3(transform.position.x + ((explosionRanges[3] - explosionRanges[2]) / 2), transform.position.y + 1f, transform.position.z);
+                        newHalfExtent = new Vector3(halfExtentXY, halfExtentXY, (explosionRanges[3] + explosionRanges[2]) / 2);
+
+                    }
+
+
+                    foreach (Collider collider in Physics.OverlapBox(newCenter, newHalfExtent, newRotation, layerMask))
+                    {
+                        //check if gameobject is player
+                        if (collider.TryGetComponent(out Player player))
+                        {
+                            if (player.GetCurrentPlayerState() == Player.PlayerStates.normal)
+                            {
+                                player.SetCurrentPlayerStateClientRpc(Player.PlayerStates.asleep);
+                                //Debug.Log("playerHit");
+                            }
+                        }
+
+                    }
+
                 }
-
             }
-            
+            popExplosionLifeSpan -= Time.deltaTime;
         }
-
+        else
+        {
+            gameObject.GetComponent<NetworkObject>().Despawn();
+            Destroy(gameObject);
+        }
+        
 
         //check item
+    }
+
+    public bool GetCanPop()
+    {
+        return canPop;
+    }
+
+    public void SetCanPop(bool poppable)
+    {
+        canPop = poppable;
     }
 }
