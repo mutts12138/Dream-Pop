@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -38,6 +39,10 @@ public class Player : NetworkBehaviour
     
     private NetworkVariable<PlayerStates> currentPlayerState = new NetworkVariable<PlayerStates>(PlayerStates.normal, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+    private NetworkVariable<int> currentLayer = new NetworkVariable<int>(3, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    //not yet implemented
+    private NetworkVariable<bool> playerColliderEnabled = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     private float verticalVelocity = 0f;
     private bool isRunning = false;
@@ -57,11 +62,18 @@ public class Player : NetworkBehaviour
     const float respawnTimerBase = 10f;
     private float respawnTimer = respawnTimerBase;
 
+    private string[] layers;
+    
 
 
     public override void OnNetworkSpawn()
     {
+        //Get layer list string name
+        layers = Enumerable.Range(0, 31).Select(index => LayerMask.LayerToName(index)).Where(l => !string.IsNullOrEmpty(l)).ToArray();
+
         //event subscribe
+        currentLayer.OnValueChanged += (int previousLayer, int newLayer) => { ChangeLayer(currentLayer.Value); };
+
         if (!IsOwner) return;
 
         currentPlayerState.OnValueChanged += (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
@@ -334,7 +346,8 @@ public class Player : NetworkBehaviour
     private void ChangeToNormalState()
     {
         //"player" = 3
-        gameObject.layer = LayerMask.NameToLayer("player");
+        //ChangeLayer(3);
+        currentLayer.Value = 3;
 
         canMove = true;
         canJump = true;
@@ -349,7 +362,8 @@ public class Player : NetworkBehaviour
     private void ChangeToAsleepState()
     {
         //"playerAsleep" = 7
-        gameObject.layer = LayerMask.NameToLayer("playerAsleep");
+        //ChangeLayer(7);
+        currentLayer.Value = 7;
 
         canMove = false;
         canJump = false;
@@ -363,8 +377,9 @@ public class Player : NetworkBehaviour
 
     private void ChangeToDeathState()
     {
-        //"player" = 3
-        gameObject.layer = LayerMask.NameToLayer("player");
+        //"playerDead" = 8
+        //ChangeLayer(8);
+        currentLayer.Value = 8;
 
         canMove = false;
         canJump = false;
@@ -383,7 +398,12 @@ public class Player : NetworkBehaviour
 
     }
 
+    private void ChangeLayer(int layerNumber)
+    {
 
+        gameObject.layer = LayerMask.NameToLayer(layers[layerNumber]);
+        Debug.Log("playerObject on layer" + gameObject.layer);
+    }
 
     public float GetPlayerNumber()
     {

@@ -4559,20 +4559,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1111859589}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 8745314787293019194, guid: ff9ee4ca2a833c84ebaa36134727c3e8,
-          type: 3}
-        m_TargetAssemblyTypeName: Player, Assembly-CSharp
-        m_MethodName: SetTeamNumberServerRpc
-        m_Mode: 3
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 2
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1111859589
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5084,20 +5071,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1331580969}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 8745314787293019194, guid: ff9ee4ca2a833c84ebaa36134727c3e8,
-          type: 3}
-        m_TargetAssemblyTypeName: Player, Assembly-CSharp
-        m_MethodName: SetTeamNumberServerRpc
-        m_Mode: 3
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 1
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1331580969
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7036,6 +7010,8 @@ MonoBehaviour:
   hostBTN: {fileID: 509123258}
   serverBTN: {fileID: 2104311869}
   clientBTN: {fileID: 1595369558}
+  team1BTN: {fileID: 1331580968}
+  team2BTN: {fileID: 1111859588}
 --- !u!114 &1785765629
 MonoBehaviour:
   m_ObjectHideFlags: 0
