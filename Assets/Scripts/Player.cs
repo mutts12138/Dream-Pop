@@ -1,38 +1,53 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-public class Player : MonoBehaviour
+
+public class Player : NetworkBehaviour
 {
     //underscore the private variables.
-    [SerializeField] private GameInput gameInput;
+    private GameInput gameInput;
     [SerializeField] private DreamBubble dreamBubble;
 
     //team
-    [SerializeField] private float teamNumber;
+    private NetworkVariable<int> teamNumber = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    
+
     [SerializeField] private float playerNumber;
 
     //player stats
     //should organize in struct
-    private float playerRadius = 0.5f;
-    private float playerHeight = 3f;
+    const float playerRadius = 0.5f;
+    const float playerHeight = 3f;
+    const float rotateSpeed = 15f;
+    const float jumpAcc = 20f;
+    const float gravityAcc = -100f;
 
     private float moveSpeed = 10f;
-    private float rotateSpeed = 15f;
-
-    private float jumpAcc = 20f;
-    private float gravityAcc = -100f;
-
 
     //player state
+    //normal: 0, asleep: 1, death: 2
+    public enum PlayerStates 
+    {   normal,
+        asleep,
+        death
+    };
+    
+    private NetworkVariable<PlayerStates> currentPlayerState = new NetworkVariable<PlayerStates>(PlayerStates.normal, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    private NetworkVariable<int> currentLayer = new NetworkVariable<int>(3, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    //not yet implemented
+    private NetworkVariable<bool> playerColliderEnabled = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
     private float verticalVelocity = 0f;
     private bool isRunning = false;
     private bool isGrounded = true;
-    private bool isAsleep = false;
-    private bool isDead = false;
-    
+
 
     private bool canMove = true;
     private bool canJump = true;
@@ -46,11 +61,26 @@ public class Player : MonoBehaviour
 
     const float respawnTimerBase = 10f;
     private float respawnTimer = respawnTimerBase;
+
+    private string[] layers;
     
 
 
-    private void Start()
+    public override void OnNetworkSpawn()
     {
+        //Get layer list string name
+        layers = Enumerable.Range(0, 31).Select(index => LayerMask.LayerToName(index)).Where(l => !string.IsNullOrEmpty(l)).ToArray();
+
+        //event subscribe
+        currentLayer.OnValueChanged += (int previousLayer, int newLayer) => { ChangeLayer(currentLayer.Value); };
+
+        if (!IsOwner) return;
+
+        currentPlayerState.OnValueChanged += (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
+
+        //connect input if owner
+        gameInput = FindObjectOfType<GameInput>();
+
         if(gameInput != null)
         {
             gameInput.OnPlaceBubble += GameInput_OnPlaceBubble;
@@ -61,6 +91,10 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
+        if (!IsOwner) return;
+
+        //updates and computes transform if owner
+        //else networktransform will synchonize
         if (canMove)
         {
             HandleMovement();
@@ -70,7 +104,9 @@ public class Player : MonoBehaviour
         AddGravity();
         HandleVerticalVelocity();
 
-        if (isAsleep)
+        //player state
+
+        if (currentPlayerState.Value == PlayerStates.asleep)
         {
             HandleAsleep();
         }
@@ -97,14 +133,13 @@ public class Player : MonoBehaviour
 
     //place bubble
     private void GameInput_OnPlaceBubble(object sender, System.EventArgs e)
-    {
-        DreamBubble dreamBubbleTransform;
+    { 
 
         //check if theres a dreambubble directly beneath the player
         if (Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 2.01f, transform.position.z), Vector3.down, out RaycastHit raycastHit))
         {
             //check and get dreamBubble class
-            if (raycastHit.transform.TryGetComponent(out dreamBubbleTransform))
+            if (raycastHit.transform.TryGetComponent(out DreamBubble outDreamBubble))
             {
                 //check if inflated
                 /*if(dreamBubbleTransform.GetInflated() == false)
@@ -114,19 +149,26 @@ public class Player : MonoBehaviour
             }
             else
             {
-                //snap dreambubble
-                dreamBubbleTransform = Instantiate(dreamBubble);
-                dreamBubbleTransform.transform.position = new Vector3(MathF.Round(gameObject.transform.position.x / 2) * 2, gameObject.transform.position.y, MathF.Round(gameObject.transform.position.z / 2) * 2);
-
-                //no snap dreambubble
-                /*dreamBubbleTransform = Instantiate(dreamBubble);
-                dreamBubbleTransform.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
-                */
+                PlaceDreamBubbleServerRpc();
             }
 
 
         }
 
+    }
+
+    [ServerRpc]
+    private void PlaceDreamBubbleServerRpc()
+    {
+        //snap dreambubble
+        DreamBubble dreamBubbleTransform = Instantiate(dreamBubble);
+        dreamBubbleTransform.transform.position = new Vector3(MathF.Round(gameObject.transform.position.x / 2) * 2, gameObject.transform.position.y, MathF.Round(gameObject.transform.position.z / 2) * 2);
+        dreamBubbleTransform.GetComponent<NetworkObject>().Spawn(true);
+
+        //no snap dreambubble
+        /*dreamBubbleTransform = Instantiate(dreamBubble);
+        dreamBubbleTransform.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
+        */
     }
 
     private void HandleMovement()
@@ -232,11 +274,6 @@ public class Player : MonoBehaviour
 
 
 
-    
-
-    
-
-
     private void HandleAsleep()
     {
         
@@ -245,8 +282,7 @@ public class Player : MonoBehaviour
             asleepTimer -= Time.deltaTime;
             if( asleepTimer < 0)
             {
-                SetIsAsleep(false);
-                
+                SetCurrentPlayerState(PlayerStates.normal);   
             }
         
     }
@@ -263,17 +299,16 @@ public class Player : MonoBehaviour
         Collider[] asleepOverlap = Physics.OverlapSphere(transform.position + Vector3.up, asleepRadius * 2, layerMask);
         if(asleepOverlap.Length > 0)
         {
-            if (asleepOverlap[0].gameObject.GetComponent<Player>().GetTeamNumber() == teamNumber)
+            if (asleepOverlap[0].gameObject.GetComponent<Player>().GetTeamNumber() == teamNumber.Value)
             {
                 //get awaken:saved
                 Debug.Log("Saved");
-                SetIsAsleep(false);
+                SetCurrentPlayerState(PlayerStates.normal);
             }
             else
             {
                 //get rude awaken:death
-                Death();
-                SetIsAsleep(false);
+                SetCurrentPlayerState(PlayerStates.death);
                 
                 
             }
@@ -282,33 +317,43 @@ public class Player : MonoBehaviour
     }
 
 
-
-
-    private void Death()
-    {
-        isDead = true;
-        ChangeToDeathState();
-        Debug.Log("death");
-    }
-
     private void Respawn()
     {
-        isDead = false;
         ChangeToNormalState();
         Debug.Log("respawn");
     }
 
 
-
+    private void ApplyPlayerState()
+    {
+        switch (currentPlayerState.Value)
+        {
+            case PlayerStates.normal:
+                ChangeToNormalState();
+                
+                break;
+            case PlayerStates.asleep:
+                ChangeToAsleepState();
+                
+                break;
+            case PlayerStates.death:
+                ChangeToDeathState();
+                
+                break;
+        }
+    }
+    
     private void ChangeToNormalState()
     {
+        //"player" = 3
+        //ChangeLayer(3);
+        currentLayer.Value = 3;
+
         canMove = true;
         canJump = true;
         canUseAbility = true;
         canUseItem = true;
         canPlaceDB = false;
-
-        
 
         Collider m_Collider = GetComponent<Collider>();
         m_Collider.enabled = true;
@@ -316,23 +361,31 @@ public class Player : MonoBehaviour
 
     private void ChangeToAsleepState()
     {
+        //"playerAsleep" = 7
+        //ChangeLayer(7);
+        currentLayer.Value = 7;
+
         canMove = false;
         canJump = false;
         canUseAbility = false;
         canUseItem = false;
         canPlaceDB = false;
+
+        asleepTimer = asleepTimeBase;
 
     }
 
     private void ChangeToDeathState()
     {
+        //"playerDead" = 8
+        //ChangeLayer(8);
+        currentLayer.Value = 8;
+
         canMove = false;
         canJump = false;
         canUseAbility = false;
         canUseItem = false;
         canPlaceDB = false;
-
-        
 
         Collider m_Collider = GetComponent<Collider>();
         m_Collider.enabled = false;
@@ -345,7 +398,12 @@ public class Player : MonoBehaviour
 
     }
 
+    private void ChangeLayer(int layerNumber)
+    {
 
+        gameObject.layer = LayerMask.NameToLayer(layers[layerNumber]);
+        Debug.Log("playerObject on layer" + gameObject.layer);
+    }
 
     public float GetPlayerNumber()
     {
@@ -353,7 +411,16 @@ public class Player : MonoBehaviour
     }
     public float GetTeamNumber()
     {
-        return teamNumber;
+
+        return teamNumber.Value;
+        
+    }
+
+    
+    public void SetTeamNumber(int newTeamNumber)
+    {
+        teamNumber.Value = newTeamNumber;
+        Debug.Log(GetTeamNumber());
     }
 
     public bool GetIsRunning()
@@ -361,43 +428,28 @@ public class Player : MonoBehaviour
         return isRunning;
     }
 
-    public bool GetIsAsleep()
+ 
+
+    public PlayerStates GetCurrentPlayerState()
     {
-        return isAsleep;
+        return currentPlayerState.Value;
     }
 
-    public bool GetIsDead()
+    public void SetCurrentPlayerState(PlayerStates newPlayerState)
     {
-        return isDead;
+        if (!IsOwner) return;
+        currentPlayerState.Value = newPlayerState;
+
     }
 
-    //when hit by popExplosion
-    public void SetIsAsleep(bool Asleep)
+    [ClientRpc]
+    public void SetCurrentPlayerStateClientRpc(PlayerStates newPlayerState)
     {
-        if (Asleep)
-        {
-            isAsleep = true;
-            asleepTimer = asleepTimeBase;
-            //"playerAsleep" = 7
-            gameObject.layer = LayerMask.NameToLayer("playerAsleep");
-            //set animation
-            //movementspeed
-            //disable ability and bubble placement
-            ChangeToAsleepState();
-        }
-        else
-        {
-            isAsleep = false;
-            //"player" = 3
-            gameObject.layer = LayerMask.NameToLayer("player");
-            //set animation
-            //revert movementspeed
-            //enable ability and bubble placement
-            if(isDead == false)
-            {
-                ChangeToNormalState();
-            }
-            
-        }
+        if (!IsOwner) return;
+        currentPlayerState.Value = newPlayerState;
+
     }
+
+    
+
 }
