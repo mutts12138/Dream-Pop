@@ -454,6 +454,25 @@ namespace BgTools.CastVisualizer
                 }
             }
 
+            // extern private static bool CheckBox_Internal(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, Quaternion orientation, int layermask, QueryTriggerInteraction queryTriggerInteraction);
+            [HarmonyPostfix]
+            [HarmonyPatch("CheckBox_Internal")]
+            static void CheckBox_Internal_Postfix(bool __result, Vector3 center, Vector3 halfExtents, Quaternion orientation)
+            {
+                if (CastVisualizerManager.Instance.ViewStatePhysicsFlag.HasFlag(CastVisualizerManager.ViewStateFlags.ViewStateElement_5))   // OverlapBoxes
+                {
+                    Vector3 extends = halfExtents * 2.0f;
+                    if (__result)
+                    {
+                        AddMeshHitToRender((PhysicsMeshShape.Box, Matrix4x4.TRS(center, orientation, extends)));
+                    }
+                    else
+                    {
+                        AddMeshToRender((PhysicsMeshShape.Box, Matrix4x4.TRS(center, orientation, extends), Vector3.zero));
+                    }
+                }
+            }
+            
             // extern private static Collider[] OverlapBox_Internal(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
             [HarmonyPrefix]
             [HarmonyPatch("OverlapBox_Internal")]
@@ -610,6 +629,25 @@ namespace BgTools.CastVisualizer
                 }
             }
 
+            // extern private static bool CheckSphere_Internal(PhysicsScene physicsScene, Vector3 position, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+            [HarmonyPostfix]
+            [HarmonyPatch("CheckSphere_Internal")]
+            static void CheckSphere_Internal_Postfix(bool __result, Vector3 position, float radius)
+            {
+                if (CastVisualizerManager.Instance.ViewStatePhysicsFlag.HasFlag(CastVisualizerManager.ViewStateFlags.ViewStateElement_6))   // OverlapSpheres
+                {
+                    Vector3 extends = new Vector3(radius, radius, radius);
+                    if (__result)
+                    {
+                        AddMeshHitToRender((PhysicsMeshShape.Sphere, Matrix4x4.TRS(position, Quaternion.identity, extends)));
+                    }
+                    else
+                    {
+                        AddMeshToRender((PhysicsMeshShape.Sphere, Matrix4x4.TRS(position, Quaternion.identity, extends), Vector3.zero));
+                    }
+                }
+            }
+            
             // extern private static Collider[] OverlapSphere_Internal(PhysicsScene physicsScene, Vector3 position, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
             [HarmonyPrefix]
             [HarmonyPatch("OverlapSphere_Internal")]
@@ -776,6 +814,27 @@ namespace BgTools.CastVisualizer
                 }
             }
 
+            // extern private static bool CheckCapsule_Internal(PhysicsScene physicsScene, Vector3 start, Vector3 end, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+            [HarmonyPostfix]
+            [HarmonyPatch("CheckCapsule_Internal")]
+            static void CheckCapsule_Internal_Postfix(bool __result, Vector3 start, Vector3 end, float radius)
+            {
+                if (CastVisualizerManager.Instance.ViewStatePhysicsFlag.HasFlag(CastVisualizerManager.ViewStateFlags.ViewStateElement_7))   // OverlapCapsules
+                {
+                    Vector3 extends = new Vector3(radius, radius, radius);
+                    Matrix4x4 mat = new Matrix4x4(start, end, extends, Vector4.zero);
+                    
+                    if (__result)
+                    {
+                        AddMeshHitToRender((PhysicsMeshShape.Capsule, mat));
+                    }
+                    else
+                    {
+                        AddMeshToRender((PhysicsMeshShape.Capsule, mat, Vector3.zero));
+                    }
+                }
+            }
+            
             // extern private static Collider[] OverlapCapsule_Internal(PhysicsScene physicsScene, Vector3 point0, Vector3 point1, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
             [HarmonyPrefix]
             [HarmonyPatch("OverlapCapsule_Internal")]

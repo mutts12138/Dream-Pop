@@ -17,7 +17,6 @@ public class PlayerAnimator : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (!IsOwner) return;
         animator = GetComponent <Animator>();
     }
 

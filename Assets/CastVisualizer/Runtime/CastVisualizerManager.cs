@@ -173,8 +173,8 @@ namespace BgTools.CastVisualizer
                 go.transform.SetParent(goParent.transform);
                 go.AddComponent<PhysicsVisualizer>();
                 go.AddComponent<Physics2DVisualizer>();
-                //goParent.hideFlags = HideFlags.HideAndDontSave | HideFlags.NotEditable;
-                //go.hideFlags = HideFlags.DontSave | HideFlags.NotEditable;
+                goParent.hideFlags = HideFlags.HideAndDontSave | HideFlags.NotEditable;
+                go.hideFlags = HideFlags.DontSave | HideFlags.NotEditable;
             }
         }
 
