@@ -143,7 +143,7 @@ namespace BgTools.CastVisualizer
                 if(Physics.BoxCast((Vector3)parameters[0], DIMENSIONS, (Vector3)parameters[1], (Quaternion)parameters[2], castDistance))
                     hitsList.Add((null, Vector3.negativeInfinity));
                 return 0;
-                });
+            });
             methodCalls.Add((CastModule.Physics, CastForm.Cast, CastShape.Box, CastType.Standard), (parameters) => {
                 RaycastHit hitInfo;
                 Physics.BoxCast((Vector3)parameters[0], DIMENSIONS, (Vector3)parameters[1], out hitInfo, (Quaternion)parameters[2], castDistance);
@@ -163,6 +163,11 @@ namespace BgTools.CastVisualizer
                 return 0;
             });
 
+            methodCalls.Add((CastModule.Physics, CastForm.Overlap, CastShape.Box, CastType.Check), (parameters) => {
+                if(Physics.CheckBox((Vector3)parameters[0], DIMENSIONS, (Quaternion)parameters[2]))
+                    hitsList.Add((null, Vector3.negativeInfinity));
+                return 0;
+            });
             methodCalls.Add((CastModule.Physics, CastForm.Overlap, CastShape.Box, CastType.Standard), (parameters) => {
                 Collider[] colliders = Physics.OverlapBox((Vector3)parameters[0], DIMENSIONS, (Quaternion)parameters[2]);
                 hitsList.AddRange(colliders.Where((collider) => collider != null).Select((collider) => (collider.gameObject, collider.transform.position)));
@@ -180,7 +185,7 @@ namespace BgTools.CastVisualizer
                 if(Physics.CapsuleCast((Vector3)parameters[0], (Vector3)parameters[0] + (Quaternion)parameters[2] * Vector3.up, RADIUS, (Vector3)parameters[1], castDistance))
                     hitsList.Add((null, Vector3.negativeInfinity));
                 return 0;
-                });
+            });
             methodCalls.Add((CastModule.Physics, CastForm.Cast, CastShape.Capsule, CastType.Standard), (parameters) => {
                 RaycastHit hitInfo;
                 Physics.CapsuleCast((Vector3)parameters[0], (Vector3)parameters[0] + (Quaternion)parameters[2] * Vector3.up, RADIUS, (Vector3)parameters[1], out hitInfo, castDistance);
@@ -200,6 +205,11 @@ namespace BgTools.CastVisualizer
                 return 0;
             });
 
+            methodCalls.Add((CastModule.Physics, CastForm.Overlap, CastShape.Capsule, CastType.Check), (parameters) => {
+                if(Physics.CheckCapsule((Vector3)parameters[0], (Vector3)parameters[0] + (Quaternion)parameters[2] * Vector3.up, RADIUS))
+                    hitsList.Add((null, Vector3.negativeInfinity));
+                return 0;
+            });
             methodCalls.Add((CastModule.Physics, CastForm.Overlap, CastShape.Capsule, CastType.Standard), (parameters) => {
                 Collider[] colliders = Physics.OverlapCapsule((Vector3)parameters[0], (Vector3)parameters[0] + (Quaternion)parameters[2] * Vector3.up, RADIUS);
                 hitsList.AddRange(colliders.Where((collider) => collider != null).Select((collider) => (collider.gameObject, collider.transform.position)));
@@ -237,6 +247,11 @@ namespace BgTools.CastVisualizer
                 return 0;
             });
 
+            methodCalls.Add((CastModule.Physics, CastForm.Overlap, CastShape.Sphere, CastType.Check), (parameters) => {
+                if(Physics.CheckSphere((Vector3)parameters[0], RADIUS))
+                    hitsList.Add((null, Vector3.negativeInfinity));
+                return 0;
+            });
             methodCalls.Add((CastModule.Physics, CastForm.Overlap, CastShape.Sphere, CastType.Standard), (parameters) => {
                 Collider[] colliders = Physics.OverlapSphere((Vector3)parameters[0], RADIUS);
                 hitsList.AddRange(colliders.Where((collider) => collider != null).Select((collider) => (collider.gameObject, collider.transform.position)));

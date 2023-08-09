@@ -73,22 +73,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dreamBubble: {fileID: 2119159842293962190, guid: 21e96035b739faa46b012741a81d945d,
     type: 3}
-  teamNumber: 0
-  onChangingTeamNumber:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: 
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
   playerNumber: 0
 --- !u!114 &903386026664709678
 MonoBehaviour:
@@ -137,7 +121,7 @@ MonoBehaviour:
   UseQuaternionCompression: 0
   UseHalfFloatPrecision: 0
   InLocalSpace: 0
-  Interpolate: 1
+  Interpolate: 0
   SlerpPosition: 0
 --- !u!1 &8735901562253790601
 GameObject:
