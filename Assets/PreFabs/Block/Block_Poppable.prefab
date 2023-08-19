@@ -71,7 +71,12 @@ PrefabInstance:
     - target: {fileID: 5854867463533343647, guid: d5c8387e37fc21e4a85d03911e32a9dc,
         type: 3}
       propertyPath: m_Name
-      value: PoppableBlock
+      value: Block_Poppable
+      objectReference: {fileID: 0}
+    - target: {fileID: 6066874289911880248, guid: d5c8387e37fc21e4a85d03911e32a9dc,
+        type: 3}
+      propertyPath: m_Name
+      value: Block_Poppable_visual
       objectReference: {fileID: 0}
     - target: {fileID: 7012105433498866670, guid: d5c8387e37fc21e4a85d03911e32a9dc,
         type: 3}

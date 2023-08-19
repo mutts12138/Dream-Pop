@@ -213,7 +213,7 @@ GameObject:
   - component: {fileID: 1556290355608313222}
   - component: {fileID: 7385062916844025409}
   m_Layer: 2
-  m_Name: dreamBubble_visual
+  m_Name: DreamBubble_visual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -298,7 +298,7 @@ GameObject:
   - component: {fileID: 2893753198698477240}
   - component: {fileID: 5165590943486093919}
   m_Layer: 6
-  m_Name: dreamBubble
+  m_Name: DreamBubble
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -356,7 +356,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   popTimer: 3
   popPowerDistance: 10
-  popExplosionLifeSpan: 0.5
   dreamBubbleVisual: {fileID: 1804468367950011726}
   dB_popExplosionVisual: {fileID: 166704739063755044}
   dB_popExplosionUpVisual: {fileID: 8905419548421510266}

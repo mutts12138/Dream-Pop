@@ -74,10 +74,12 @@ public class NetworkManagerUI : MonoBehaviour
         connectBTN.onClick.AddListener(() =>
         {
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(ipv4Address, port, null);
+            Debug.Log("connecting to" + ipv4Address + "port" + port);
             NetworkManager.Singleton.StartClient();
             connectionDataGUI.gameObject.SetActive(false);
         });
 
+        
 
 
 

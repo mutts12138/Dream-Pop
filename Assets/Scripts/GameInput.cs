@@ -8,6 +8,8 @@ public class GameInput : MonoBehaviour
     private PlayerInputActions playerInputActions;
 
     public event EventHandler OnPlaceBubble;
+    public event EventHandler OnChargingBubble;
+
     public event EventHandler OnJump;
 
     private void Awake()
@@ -15,7 +17,10 @@ public class GameInput : MonoBehaviour
         playerInputActions = new PlayerInputActions();
         playerInputActions.Player.Enable();
 
+       
         playerInputActions.Player.PlaceBubble.performed += PlaceBubble_performed;
+        
+
         playerInputActions.Player.Jump.performed += Jump_performed;
     }
 
@@ -23,6 +28,8 @@ public class GameInput : MonoBehaviour
     {
         OnJump?.Invoke(this, EventArgs.Empty);
     }
+
+ 
 
     private void PlaceBubble_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {

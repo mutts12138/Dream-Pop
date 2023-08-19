@@ -3,13 +3,17 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Experimental.GlobalIllumination;
 using UnityEngine.UIElements;
 
 
 public class Player : NetworkBehaviour
 {
     //underscore the private variables.
+    private GameManager gameManager;
+    private PlayerUI playerUI;
     private GameInput gameInput;
     [SerializeField] private DreamBubble dreamBubble;
 
@@ -20,14 +24,34 @@ public class Player : NetworkBehaviour
     [SerializeField] private float playerNumber;
 
     //player stats
-    //should organize in struct
-    const float playerRadius = 0.5f;
-    const float playerHeight = 3f;
-    const float rotateSpeed = 15f;
-    const float jumpAcc = 20f;
-    const float gravityAcc = -100f;
+    //const
+    private const float playerRadius = 0.5f;
+    private const float playerHeight = 3f;
+    private const float rotateSpeed = 15f;
+    private const float jumpAcc = 20f;
 
-    private float moveSpeed = 10f;
+    //variables
+    private float baseMoveSpeed;
+    private int currentMoveSpeedLevel;
+    private int maxMoveSpeedLevel;
+
+    private int bubbleCount;
+    private int currentBubbleCountLevel;
+    private int maxBubbleCountLevel;
+
+    
+    private int currentBubblePowerLevel;
+    private int maxBubblePowerLevel;
+
+    //resource in using abilities
+    private int dreamFragCount;
+    private int maxDreamFragCount;
+
+    //gravity numbers get from game manager
+    private float gravityAcc;
+    private float gravityMaxSpeed;
+
+    
 
     //player state
     //normal: 0, asleep: 1, death: 2
@@ -63,31 +87,78 @@ public class Player : NetworkBehaviour
     private float respawnTimer = respawnTimerBase;
 
     private string[] layers;
-    
 
+    //event
+    
+    public event EventHandler<CharacterBaseStatLevelChangeEventArgs> onCharacterBaseStatLevelChange;
+
+    public class CharacterBaseStatLevelChangeEventArgs : EventArgs
+    {
+        public int newMoveSpeedLevel;
+        public int newBubblePowerLevel;
+        public int newBubbleCountLevel;
+    }
 
     public override void OnNetworkSpawn()
     {
-        //Get layer list string name
+        //Get layermask list string name
         layers = Enumerable.Range(0, 31).Select(index => LayerMask.LayerToName(index)).Where(l => !string.IsNullOrEmpty(l)).ToArray();
 
         //event subscribe
         currentLayer.OnValueChanged += (int previousLayer, int newLayer) => { ChangeLayer(currentLayer.Value); };
 
+        //if owner
         if (!IsOwner) return;
 
-        currentPlayerState.OnValueChanged += (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
+        //connect game manager
 
-        //connect input if owner
+        gameManager = FindObjectOfType<GameManager>();
+
+        //connect to player UI
+
+        playerUI = FindObjectOfType<PlayerUI>();
+        playerUI.SetPlayer(this);
+
+        //connect input 
         gameInput = FindObjectOfType<GameInput>();
 
-        if(gameInput != null)
+        if (gameInput != null)
         {
             gameInput.OnPlaceBubble += GameInput_OnPlaceBubble;
-            gameInput.OnJump += GameInput_OnJump;
+            //gameInput.OnJump += GameInput_OnJump;
         }
+
+
+
+        //event subscribe
+        currentPlayerState.OnValueChanged += (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
+
+        
+
+        
+
+        //set character and Stats
+        SetInitialStats();
+    }
+
+    private void SetInitialStats()
+    {
+        //set character and abilities
+        baseMoveSpeed = 10f;
+        //set initial max stats : movementspeed,bubble count, bubble power
+        maxBubbleCountLevel = 10;
+        maxBubblePowerLevel = 10;
+        maxMoveSpeedLevel = 10;
+        //set initial stats : movementspeed,bubble count, bubble power
+        ChangeCharacterBaseStatLevels(3, 2, 2);
+
+        //gravity
+        gravityAcc = gameManager.globalGravityAcc;
+        gravityMaxSpeed = gameManager.globalGravityMaxSpeed;
+
         
     }
+
 
     private void Update()
     {
@@ -104,12 +175,15 @@ public class Player : NetworkBehaviour
         AddGravity();
         HandleVerticalVelocity();
 
+        HandlePickUpCollision();
+
         //player state
 
         if (currentPlayerState.Value == PlayerStates.asleep)
         {
             HandleAsleep();
         }
+
         
     }
 
@@ -134,36 +208,38 @@ public class Player : NetworkBehaviour
     //place bubble
     private void GameInput_OnPlaceBubble(object sender, System.EventArgs e)
     { 
-
-        //check if theres a dreambubble directly beneath the player
-        if (Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 2.01f, transform.position.z), Vector3.down, out RaycastHit raycastHit))
+        //check to see if player is grounded
+        //check to see if player has reached bubbleCountLimit
+        if(bubbleCount < currentBubbleCountLevel)
         {
-            //check and get dreamBubble class
-            if (raycastHit.transform.TryGetComponent(out DreamBubble outDreamBubble))
-            {
-                //check if inflated
-                /*if(dreamBubbleTransform.GetInflated() == false)
-                {
-                    dreamBubbleTransform.InflateBubble();
-                }*/
-            }
-            else
-            {
-                PlaceDreamBubbleServerRpc();
-            }
-
-
+            PlaceDreamBubbleServerRpc();
         }
 
+        
     }
 
     [ServerRpc]
     private void PlaceDreamBubbleServerRpc()
     {
+        //make it active.deactive, transform out of sight, avoid instantiate.destroy, instantiate only when bubbleUp
         //snap dreambubble
-        DreamBubble dreamBubbleTransform = Instantiate(dreamBubble);
-        dreamBubbleTransform.transform.position = new Vector3(MathF.Round(gameObject.transform.position.x / 2) * 2, gameObject.transform.position.y, MathF.Round(gameObject.transform.position.z / 2) * 2);
-        dreamBubbleTransform.GetComponent<NetworkObject>().Spawn(true);
+        //check if a dreambubble already exist at current location
+        Vector3 dreamBubbleLocation = new Vector3(MathF.Round(gameObject.transform.position.x / 2) * 2, gameObject.transform.position.y +1, MathF.Round(gameObject.transform.position.z / 2) * 2);
+
+        int layerMask;
+        int layerNumber = 6;
+        layerMask = 1 << layerNumber;
+
+        if(Physics.OverlapSphere(dreamBubbleLocation, 0.5f, layerMask).Length <= 0)
+        {
+            DreamBubble dreamBubbleTransform = Instantiate(dreamBubble);
+            dreamBubbleTransform.transform.position = dreamBubbleLocation;
+            dreamBubbleTransform.GetComponent<NetworkObject>().Spawn(true);
+            dreamBubbleTransform.SetPlayer(this);
+            dreamBubbleTransform.SetPopPowerDistance(currentBubblePowerLevel);
+
+            bubbleCount++;
+        }
 
         //no snap dreambubble
         /*dreamBubbleTransform = Instantiate(dreamBubble);
@@ -171,10 +247,19 @@ public class Player : NetworkBehaviour
         */
     }
 
+    public void RestoreBubbleCount()
+    {
+        if(bubbleCount > 0)
+        {
+            bubbleCount--;
+        }
+    }
+
     private void HandleMovement()
     {
         //for detecting collision
-        float moveMaxDistance = moveSpeed * Time.deltaTime;
+        float moveSpeed = baseMoveSpeed * currentMoveSpeedLevel;
+        float moveMaxDistance = baseMoveSpeed * Time.deltaTime;
 
         //get movement input
         Vector2 inputVector = Vector3.zero;
@@ -274,16 +359,66 @@ public class Player : NetworkBehaviour
 
 
 
+
+
+   private void HandlePickUpCollision()
+    {
+        //player capsule
+        Vector3 capsuleBotPoint = new Vector3(transform.position.x, transform.position.y + (playerRadius) + 0.01f, transform.position.z);
+        Vector3 capsuleTopPoint = transform.position + (Vector3.up * (playerHeight - (playerRadius) - 0.01f));
+        float capsuleRadius = playerRadius + 0.5f;
+
+        int layerNumber = 9;
+        int layerMask;
+        layerMask = 1 << layerNumber;
+
+        //check collision
+        Collider[] pickUpColliders = Physics.OverlapCapsule(capsuleBotPoint, capsuleTopPoint, capsuleRadius, layerMask);
+
+        foreach (Collider pickUpCollider in pickUpColliders)
+        {
+            pickUpCollider.gameObject.TryGetComponent<PickUp>(out PickUp pickUp);
+
+            pickUp.PlayerPickedUp(gameObject.GetComponent<Player>());
+        }
+
+    }
+
+    public void ChangeCharacterBaseStatLevels(int deltaMoveSpeedLevel, int deltaBubbleCountLevel, int deltaBubblePowerLevel)
+    {
+
+        currentMoveSpeedLevel += deltaMoveSpeedLevel;
+        Mathf.Clamp(currentMoveSpeedLevel,0,maxMoveSpeedLevel);
+
+        currentBubbleCountLevel += deltaBubbleCountLevel;
+        Mathf.Clamp(currentBubbleCountLevel, 0, maxBubbleCountLevel);
+        
+        currentBubblePowerLevel += deltaBubblePowerLevel;
+        Mathf.Clamp(currentBubblePowerLevel, 0, maxBubblePowerLevel); 
+
+        onCharacterBaseStatLevelChange?.Invoke(this, new CharacterBaseStatLevelChangeEventArgs {newBubbleCountLevel = currentBubbleCountLevel, newMoveSpeedLevel = currentMoveSpeedLevel, newBubblePowerLevel = currentBubblePowerLevel});
+    }
+
+
+
+
     private void HandleAsleep()
     {
+
+        //check collision for enemy or ally
         
-            //check collision for enemy or ally
+        asleepTimer -= Time.deltaTime;
+
+        if (asleepTimer < 0)
+        {
+            SetCurrentPlayerState(PlayerStates.normal);
+        }
+        else
+        {
             CheckAsleepCollision();
-            asleepTimer -= Time.deltaTime;
-            if( asleepTimer < 0)
-            {
-                SetCurrentPlayerState(PlayerStates.normal);   
-            }
+        }
+        
+            
         
     }
 
@@ -404,6 +539,13 @@ public class Player : NetworkBehaviour
         gameObject.layer = LayerMask.NameToLayer(layers[layerNumber]);
         Debug.Log("playerObject on layer" + gameObject.layer);
     }
+
+
+    
+
+
+
+    //get and set
 
     public float GetPlayerNumber()
     {

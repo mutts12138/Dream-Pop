@@ -7,7 +7,9 @@ using UnityEngine;
 
 public class DreamBubble : NetworkBehaviour, Ipoppable
 {
-    [SerializeField] private float popTimer = 3f;
+    private float popTimer = 3f;
+    private float inflateTimer = 1f;
+
     [SerializeField] private float popPowerDistance = 10f;
     private bool popExplosionEnabled = false;
     private float popExplosionLifeSpan = 0.5f;
@@ -26,6 +28,9 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
     [SerializeField] private GameObject dB_popExplosionRightVisual;
 
     float[] explosionRanges;
+
+    private Player player;
+    
 
     public override void OnNetworkSpawn()
     {
@@ -93,20 +98,28 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
     {
         if (!inflated)
         {
-            if (!CheckPlayerOnBubble())
+            if (!CheckPlayerOnBubble() || inflateTimer < 0)
             {
                 InflateBubble();
             }
+
+            inflateTimer -= Time.deltaTime;
+
         }
     }
 
     private bool CheckPlayerOnBubble()
     {
-        int layerNumber = 3;
+        int playerLayer = 3;
+        int AsleepPlayerLayer = 7;
+        
         int layerMask;
-        layerMask = 1 << layerNumber;
 
-        if(!(Physics.OverlapBox(new Vector3(transform.position.x, transform.position.y +1, transform.position.z), new Vector3(1, 1, 1), transform.rotation, layerMask).Length == 0))
+        layerMask = 1 << playerLayer;
+        layerMask = layerMask | 1 << AsleepPlayerLayer;
+        
+
+        if (!(Physics.OverlapBox(new Vector3(transform.position.x, transform.position.y +1, transform.position.z), new Vector3(1, 1, 1), transform.rotation, layerMask).Length == 0))
         {
             return true;
         }
@@ -139,17 +152,26 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
 
 
         //bring up all player, item up above the dream bubble.
-        /*
-        int layerNumber;
+        //player layers: 3, 7, 8
+        //item layer: 9
+
+
+        int playerLayer = 3;
+        int AsleepPlayerLayer = 7;
+        int pickUpLayer = 9;
         int layerMask;
-        layerNumber = 8;
-        layerMask = 1 << layerNumber;
-        Collider[] everythingWithinDB = Physics.OverlapBox(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), new Vector3(1, 1, 1), transform.rotation, layerMask);
-        foreach (Collider col in everythingWithinDB)
+
+        layerMask = 1 << playerLayer;
+        layerMask = layerMask | 1 << AsleepPlayerLayer;
+        layerMask = layerMask | 1 <<  pickUpLayer;
+        //Debug.Log(layerMask);
+
+        Collider[] colliders = Physics.OverlapBox(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), new Vector3(1, 1, 1), transform.rotation, layerMask);
+        foreach (Collider col in colliders)
         {
             col.gameObject.transform.position += new Vector3(0, 2, 0);
         }
-        */
+        
     }
 
 
@@ -174,18 +196,19 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         Ray rayDown = new Ray(offsetTransformPosition, new Vector3(0, 0, -1));
         Ray rayLeft = new Ray(offsetTransformPosition, new Vector3(-1, 0, 0));
         Ray rayRight = new Ray(offsetTransformPosition, new Vector3(1, 0, 0));
-        //Ray rayBelow = new Ray(offsetTransformPosition, new Vector3(0,-1,0));
+        Ray rayTop = new Ray(offsetTransformPosition, new Vector3(0, 1, 0));
+        Ray rayBelow = new Ray(offsetTransformPosition, new Vector3(0,-1,0));
+        
 
-
-        Ray[] ray4Directions = { rayUp, rayDown, rayLeft, rayRight };
+        Ray[] ray4Directions = { rayUp, rayDown, rayLeft, rayRight, rayTop, rayBelow};
 
         int layerNumber = 6;
         int layerMask;
         layerMask = 1 << layerNumber;
 
-        explosionRanges = new float[4];
+        explosionRanges = new float[6];
 
-        //raycast in 4 directions, get explosionRange[] for visual and actual hitbox, pop dreambubbles hit
+        //raycast in 6 directions, get explosionRange[] for visual and actual hitbox, pop dreambubbles hit
         int counter = 0;
         foreach (Ray ray in ray4Directions)
         {
@@ -209,7 +232,7 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
             }
             counter++;
         }
-        //explosionRange[]: 0:up, 1:down, 2:left, 3:right
+        //explosionRange[]: 0:up, 1:down, 2:left, 3:right 4:top 5:below
         return explosionRanges;
     }
 
@@ -298,12 +321,19 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         }
         else
         {
+            player.RestoreBubbleCount();
+
             gameObject.GetComponent<NetworkObject>().Despawn();
             Destroy(gameObject);
         }
         
 
         //check item
+    }
+
+    public void SetPlayer(Player newPlayer)
+    {
+        player = newPlayer;
     }
 
     public bool GetCanPop()
@@ -314,5 +344,10 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
     public void SetCanPop(bool poppable)
     {
         canPop = poppable;
+    }
+
+    public void SetPopPowerDistance(int bubblePowerLevel)
+    {
+        popPowerDistance = 2 * bubblePowerLevel;
     }
 }
