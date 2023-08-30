@@ -24,6 +24,14 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.Jump.performed += Jump_performed;
     }
 
+    private void OnDisable()
+    {
+        playerInputActions.Player.PlaceBubble.performed -= PlaceBubble_performed;
+
+
+        playerInputActions.Player.Jump.performed -= Jump_performed;
+    }
+
     private void Jump_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
         OnJump?.Invoke(this, EventArgs.Empty);

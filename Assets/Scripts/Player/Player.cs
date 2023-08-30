@@ -13,15 +13,18 @@ public class Player : NetworkBehaviour
 {
     //underscore the private variables.
     private GameManager gameManager;
-    private PlayerUI playerUI;
+    
     private GameInput gameInput;
     [SerializeField] private DreamBubble dreamBubble;
 
     //team
+
+    private ulong clientId;
+
     private NetworkVariable<int> teamNumber = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     
 
-    [SerializeField] private float playerNumber;
+    
 
     //player stats
     //const
@@ -104,6 +107,7 @@ public class Player : NetworkBehaviour
         //Get layermask list string name
         layers = Enumerable.Range(0, 31).Select(index => LayerMask.LayerToName(index)).Where(l => !string.IsNullOrEmpty(l)).ToArray();
 
+
         //event subscribe
         currentLayer.OnValueChanged += (int previousLayer, int newLayer) => { ChangeLayer(currentLayer.Value); };
 
@@ -113,11 +117,6 @@ public class Player : NetworkBehaviour
         //connect game manager
 
         gameManager = FindObjectOfType<GameManager>();
-
-        //connect to player UI
-
-        playerUI = FindObjectOfType<PlayerUI>();
-        playerUI.SetPlayer(this);
 
         //connect input 
         gameInput = FindObjectOfType<GameInput>();
@@ -141,6 +140,17 @@ public class Player : NetworkBehaviour
         SetInitialStats();
     }
 
+     private void OnDisable()
+    {
+        currentLayer.OnValueChanged -= (int previousLayer, int newLayer) => { ChangeLayer(currentLayer.Value); };
+        if (gameInput != null)
+        {
+            gameInput.OnPlaceBubble -= GameInput_OnPlaceBubble;
+        }
+        
+        currentPlayerState.OnValueChanged -= (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
+    }
+
     private void SetInitialStats()
     {
         //set character and abilities
@@ -153,8 +163,17 @@ public class Player : NetworkBehaviour
         ChangeCharacterBaseStatLevels(3, 2, 2);
 
         //gravity
-        gravityAcc = gameManager.globalGravityAcc;
-        gravityMaxSpeed = gameManager.globalGravityMaxSpeed;
+        if(gameManager != null)
+        {
+            gravityAcc = gameManager.GetGlobalGravityAcc();
+            gravityMaxSpeed = gameManager.GetGlobalGravityMaxSpeed();
+        }
+        else
+        {
+            gravityAcc = -100f;
+            gravityMaxSpeed = -10f;
+        }
+        
 
         
     }
@@ -207,20 +226,23 @@ public class Player : NetworkBehaviour
 
     //place bubble
     private void GameInput_OnPlaceBubble(object sender, System.EventArgs e)
-    { 
+    {
+        
         //check to see if player is grounded
         //check to see if player has reached bubbleCountLimit
-        if(bubbleCount < currentBubbleCountLevel)
+
+        if (bubbleCount < currentBubbleCountLevel)
         {
-            PlaceDreamBubbleServerRpc();
+            PlaceDreamBubbleServerRpc(currentBubblePowerLevel);
         }
 
         
     }
 
     [ServerRpc]
-    private void PlaceDreamBubbleServerRpc()
+    private void PlaceDreamBubbleServerRpc(int bubblePowerLevel)
     {
+        
         //make it active.deactive, transform out of sight, avoid instantiate.destroy, instantiate only when bubbleUp
         //snap dreambubble
         //check if a dreambubble already exist at current location
@@ -235,8 +257,11 @@ public class Player : NetworkBehaviour
             DreamBubble dreamBubbleTransform = Instantiate(dreamBubble);
             dreamBubbleTransform.transform.position = dreamBubbleLocation;
             dreamBubbleTransform.GetComponent<NetworkObject>().Spawn(true);
+
+            Debug.Log(this);
+
             dreamBubbleTransform.SetPlayer(this);
-            dreamBubbleTransform.SetPopPowerDistance(currentBubblePowerLevel);
+            dreamBubbleTransform.SetPopPowerDistance(bubblePowerLevel);
 
             bubbleCount++;
         }
@@ -247,8 +272,10 @@ public class Player : NetworkBehaviour
         */
     }
 
-    public void RestoreBubbleCount()
+    [ClientRpc]
+    public void RestoreBubbleCountClientRpc()
     {
+        if (!IsOwner) return;
         if(bubbleCount > 0)
         {
             bubbleCount--;
@@ -379,7 +406,7 @@ public class Player : NetworkBehaviour
         {
             pickUpCollider.gameObject.TryGetComponent<PickUp>(out PickUp pickUp);
 
-            pickUp.PlayerPickedUp(gameObject.GetComponent<Player>());
+            //pickUp.PlayerPickedUpServerRpc(gameObject.GetComponent<Player>());
         }
 
     }
@@ -546,10 +573,13 @@ public class Player : NetworkBehaviour
 
 
     //get and set
-
-    public float GetPlayerNumber()
+    public ulong GetClientId()
     {
-        return playerNumber;
+        return clientId;
+    }
+    public void SetClientId(ulong clientID)
+    {
+        clientId = clientID;
     }
     public float GetTeamNumber()
     {
@@ -593,5 +623,6 @@ public class Player : NetworkBehaviour
     }
 
     
-
+   
+    
 }

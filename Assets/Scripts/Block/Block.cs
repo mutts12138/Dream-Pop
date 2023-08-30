@@ -9,7 +9,11 @@ public class Block : NetworkBehaviour, Ipoppable
 
     [SerializeField] private bool canPop = true;
     private float gravityScale = -10f;
-
+    private void Awake()
+    {
+        if (!IsServer) return;
+        //gameObject.GetComponent<NetworkObject>().Spawn(true);
+    }
     public override void OnNetworkSpawn()
     {
         if (!IsServer) return;

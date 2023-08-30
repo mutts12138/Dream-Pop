@@ -34,6 +34,8 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
 
     public override void OnNetworkSpawn()
     {
+        
+
         SetCanPop(true);
         //hide popExplosionRender
         Renderer[] popExplosionRendererArray = dB_popExplosionVisual.GetComponentsInChildren<Renderer>(true);
@@ -56,6 +58,7 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
     {
         
         if (!IsServer) return;
+
         HandleInflateBubble();
         HandlePopTimer();
         HandlePopExplosionApplyHit();
@@ -321,7 +324,7 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         }
         else
         {
-            player.RestoreBubbleCount();
+            player.RestoreBubbleCountClientRpc();
 
             gameObject.GetComponent<NetworkObject>().Despawn();
             Destroy(gameObject);
@@ -331,9 +334,9 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         //check item
     }
 
-    public void SetPlayer(Player newPlayer)
-    {
-        player = newPlayer;
+    public void SetPlayer(Player owningPlayer)
+    { 
+        player = owningPlayer;
     }
 
     public bool GetCanPop()

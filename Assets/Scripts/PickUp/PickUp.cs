@@ -9,11 +9,17 @@ public class PickUp : NetworkBehaviour
     private PickUpObject pickUpObject;
 
     private float gravityScale = -20f;
-    
+
+    private void Awake()
+    {
+        if (!IsServer) return;
+        //gameObject.GetComponent<NetworkObject>().Spawn(true);
+    }
 
     // Start is called before the first frame update
     public override void OnNetworkSpawn()
     {
+        if (!IsOwner) return;
         pickUpObject = gameObject.GetComponent<PickUpObject>();
 
     }
@@ -21,12 +27,15 @@ public class PickUp : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!IsOwner) return;
         HandleGravity();
     }
 
-    public void PlayerPickedUp(Player player)
+    [ServerRpc]
+    public void PlayerPickedUpServerRpc(int playerNumber)
     {
-        player.ChangeCharacterBaseStatLevels(pickUpObject.speedUp, pickUpObject.bubbleUp, pickUpObject.powerUp);
+        //player.ChangeCharacterBaseStatLevels(pickUpObject.speedUp, pickUpObject.bubbleUp, pickUpObject.powerUp);
+        gameObject.GetComponent<NetworkObject>().Despawn();
         Destroy(gameObject);
     }
 
