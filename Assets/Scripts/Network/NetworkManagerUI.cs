@@ -21,8 +21,8 @@ public class NetworkManagerUI : MonoBehaviour
 
 
 
-    private string ipv4Address;
-    private ushort port;
+    private string ipv4Address = "127.0.0.1";
+    private ushort port = 7777;
     
     
     private void Awake()

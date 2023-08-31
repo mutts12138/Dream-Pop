@@ -34,23 +34,22 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
 
     public override void OnNetworkSpawn()
     {
-        
 
-        SetCanPop(true);
         //hide popExplosionRender
         Renderer[] popExplosionRendererArray = dB_popExplosionVisual.GetComponentsInChildren<Renderer>(true);
         foreach (Renderer renderer in popExplosionRendererArray)
         {
             renderer.enabled = false;
         }
-
         //deflate
-        dreamBubbleVisual.GetComponent<Transform>().localPosition = new Vector3(0,0,0);
+        dreamBubbleVisual.GetComponent<Transform>().localPosition = new Vector3(0, 0, 0);
         dreamBubbleVisual.GetComponent<Transform>().localScale = new Vector3(1.75f, 1, 1.75f);
-        //int layerNumber = 7;
-        //int layerMask;
-        //layerMask = 1 << layerNumber;
-        //gameObject.layer = LayerMask.NameToLayer("dreamBubbleDeflate");
+
+
+
+        if (!IsServer) return;
+        SetCanPop(true);
+
 
     }
 
@@ -140,15 +139,16 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         return inflated;
     }
 
-    public void InflateBubble()
+    private void InflateBubble()
     {
         //place deflated bubble, visual and collider
         //when player not stepping on it anymore, inflate, boxcastall foreach check if play
         //when player place another bubble, inflate
         //when inflated, everything inside boxcastall get position.y set to this.position.y +1
         inflated = true;
-        dreamBubbleVisual.GetComponent<Transform>().localPosition = new Vector3(0, 1, 0);
-        dreamBubbleVisual.GetComponent<Transform>().localScale = new Vector3(1.5f, 1.5f, 1.5f);
+
+        //visual
+        InflateBubbleVisualClientRpc();
 
         //set dreambubble's layer to inflated
         //gameObject.layer = LayerMask.NameToLayer("dreamBubble");
@@ -172,16 +172,30 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         Collider[] colliders = Physics.OverlapBox(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), new Vector3(1, 1, 1), transform.rotation, layerMask);
         foreach (Collider col in colliders)
         {
-            col.gameObject.transform.position += new Vector3(0, 2, 0);
+            if (col.gameObject.TryGetComponent<Player> (out player)){
+                player.InflateBubblePushUpClientRpc();
+            }
+            else
+            {
+                col.gameObject.transform.position += new Vector3(0, 2, 0);
+            }
+            
         }
         
     }
 
+    [ClientRpc]
+    private void InflateBubbleVisualClientRpc()
+    {
+        dreamBubbleVisual.GetComponent<Transform>().localPosition = new Vector3(0, 1, 0);
+        dreamBubbleVisual.GetComponent<Transform>().localScale = new Vector3(1.5f, 1.5f, 1.5f);
+    }
 
     public void Pop()
     {
         if (!IsServer) return;
         explosionRanges = CalculateExplosionRanges();
+        //visual
         popExplosionEnableVisualClientRpc(explosionRanges);
 
         popExplosionEnabled = true;
@@ -324,7 +338,7 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         }
         else
         {
-            player.RestoreBubbleCountClientRpc();
+            player.ChangeBubbleCountClientRpc(-1);
 
             gameObject.GetComponent<NetworkObject>().Despawn();
             Destroy(gameObject);

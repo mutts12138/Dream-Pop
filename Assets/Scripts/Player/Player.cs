@@ -19,7 +19,7 @@ public class Player : NetworkBehaviour
 
     //team
 
-    private ulong clientId;
+    private ulong clientID;
 
     private NetworkVariable<int> teamNumber = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     
@@ -160,7 +160,7 @@ public class Player : NetworkBehaviour
         maxBubblePowerLevel = 10;
         maxMoveSpeedLevel = 10;
         //set initial stats : movementspeed,bubble count, bubble power
-        ChangeCharacterBaseStatLevels(3, 2, 2);
+        CallChangeCharacterBaseStatLevelsServerRpc(3, 2, 2);
 
         //gravity
         if(gameManager != null)
@@ -181,6 +181,12 @@ public class Player : NetworkBehaviour
 
     private void Update()
     {
+        if (IsServer)
+        {
+            HandlePickUpCollision();
+        }
+        
+
         if (!IsOwner) return;
 
         //updates and computes transform if owner
@@ -194,7 +200,7 @@ public class Player : NetworkBehaviour
         AddGravity();
         HandleVerticalVelocity();
 
-        HandlePickUpCollision();
+        
 
         //player state
 
@@ -227,7 +233,8 @@ public class Player : NetworkBehaviour
     //place bubble
     private void GameInput_OnPlaceBubble(object sender, System.EventArgs e)
     {
-        
+        //Debug.Log(bubbleCount);
+        //Debug.Log(currentBubbleCountLevel);
         //check to see if player is grounded
         //check to see if player has reached bubbleCountLimit
 
@@ -258,12 +265,12 @@ public class Player : NetworkBehaviour
             dreamBubbleTransform.transform.position = dreamBubbleLocation;
             dreamBubbleTransform.GetComponent<NetworkObject>().Spawn(true);
 
-            Debug.Log(this);
+            //Debug.Log(this);
 
             dreamBubbleTransform.SetPlayer(this);
             dreamBubbleTransform.SetPopPowerDistance(bubblePowerLevel);
 
-            bubbleCount++;
+            ChangeBubbleCountClientRpc(1);
         }
 
         //no snap dreambubble
@@ -272,14 +279,21 @@ public class Player : NetworkBehaviour
         */
     }
 
+    
+
     [ClientRpc]
-    public void RestoreBubbleCountClientRpc()
+    public void ChangeBubbleCountClientRpc(int deltaBubbleCount)
     {
         if (!IsOwner) return;
-        if(bubbleCount > 0)
-        {
-            bubbleCount--;
-        }
+        bubbleCount += deltaBubbleCount;
+        Mathf.Clamp(bubbleCount, 0, currentBubbleCountLevel);
+    }
+
+    [ClientRpc]
+    public void InflateBubblePushUpClientRpc()
+    {
+        if (!IsOwner) return;
+        transform.position += new Vector3(0, 2, 0);
     }
 
     private void HandleMovement()
@@ -387,7 +401,7 @@ public class Player : NetworkBehaviour
 
 
 
-
+   //let server run this update
    private void HandlePickUpCollision()
     {
         //player capsule
@@ -406,13 +420,24 @@ public class Player : NetworkBehaviour
         {
             pickUpCollider.gameObject.TryGetComponent<PickUp>(out PickUp pickUp);
 
-            //pickUp.PlayerPickedUpServerRpc(gameObject.GetComponent<Player>());
+            
+            pickUp.PlayerPickedUp(this);
         }
 
     }
 
-    public void ChangeCharacterBaseStatLevels(int deltaMoveSpeedLevel, int deltaBubbleCountLevel, int deltaBubblePowerLevel)
+
+
+    [ServerRpc]
+    public void CallChangeCharacterBaseStatLevelsServerRpc(int deltaMoveSpeedLevel, int deltaBubbleCountLevel, int deltaBubblePowerLevel)
     {
+        ChangeCharacterBaseStatLevelsClientRpc(deltaMoveSpeedLevel, deltaBubbleCountLevel, deltaBubblePowerLevel);
+    }
+
+    [ClientRpc]
+    public void ChangeCharacterBaseStatLevelsClientRpc(int deltaMoveSpeedLevel, int deltaBubbleCountLevel, int deltaBubblePowerLevel)
+    {
+        if (!IsOwner) return;
 
         currentMoveSpeedLevel += deltaMoveSpeedLevel;
         Mathf.Clamp(currentMoveSpeedLevel,0,maxMoveSpeedLevel);
@@ -423,6 +448,7 @@ public class Player : NetworkBehaviour
         currentBubblePowerLevel += deltaBubblePowerLevel;
         Mathf.Clamp(currentBubblePowerLevel, 0, maxBubblePowerLevel); 
 
+        //updates UI
         onCharacterBaseStatLevelChange?.Invoke(this, new CharacterBaseStatLevelChangeEventArgs {newBubbleCountLevel = currentBubbleCountLevel, newMoveSpeedLevel = currentMoveSpeedLevel, newBubblePowerLevel = currentBubblePowerLevel});
     }
 
@@ -575,11 +601,11 @@ public class Player : NetworkBehaviour
     //get and set
     public ulong GetClientId()
     {
-        return clientId;
+        return clientID;
     }
     public void SetClientId(ulong clientID)
     {
-        clientId = clientID;
+        this.clientID = clientID;
     }
     public float GetTeamNumber()
     {

@@ -26,13 +26,13 @@ public class PlayerUI : MonoBehaviour
     {
         BindPlayerUIToLocalClientPlayerObjectBTN.onClick.AddListener(() =>
         {
-            if (NetworkManager.Singleton.ConnectedClients[NetworkManager.Singleton.LocalClientId].PlayerObject == null)
+            if (NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(NetworkManager.Singleton.LocalClientId).GetComponent<Player>() == null)
             {
                 Debug.Log("Player is null, PlayerUI:SetPlayer failed");
                 return;
             }
                 
-            Player currentLocalPlayerObject = NetworkManager.Singleton.ConnectedClients[NetworkManager.Singleton.LocalClientId].PlayerObject.GetComponent<Player>();
+            Player currentLocalPlayerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(NetworkManager.Singleton.LocalClientId).GetComponent<Player>();
             BindPlayerUIToPlayer(currentLocalPlayerObject);
         });
 
@@ -42,7 +42,11 @@ public class PlayerUI : MonoBehaviour
     private void OnDisable()
     {
         BindPlayerUIToLocalClientPlayerObjectBTN.onClick.RemoveAllListeners();
-        player.onCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
+        if (player != null )
+        {
+            player.onCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
+        }
+        
         team1BTN.onClick.RemoveAllListeners();
         team2BTN.onClick.RemoveAllListeners();
 
@@ -50,6 +54,8 @@ public class PlayerUI : MonoBehaviour
 
     private void BindPlayerUIToPlayer(Player newPlayerObject)
     {
+        Debug.Log("bind player ui to player is called");
+
         ClearTeamSelectBTNListeners();
 
         player = newPlayerObject;
@@ -70,6 +76,8 @@ public class PlayerUI : MonoBehaviour
         {
             player.SetTeamNumber(2);
         });
+
+        player.CallChangeCharacterBaseStatLevelsServerRpc(0, 0, 0);
     }
 
     private void ClearTeamSelectBTNListeners()
