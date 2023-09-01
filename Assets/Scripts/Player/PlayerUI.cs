@@ -16,8 +16,7 @@ public class PlayerUI : MonoBehaviour
 
     private Player player;
 
-    [SerializeField] private Button team1BTN;
-    [SerializeField] private Button team2BTN;
+    
 
 
 
@@ -47,16 +46,13 @@ public class PlayerUI : MonoBehaviour
             player.onCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
         }
         
-        team1BTN.onClick.RemoveAllListeners();
-        team2BTN.onClick.RemoveAllListeners();
+        
 
     }
 
     private void BindPlayerUIToPlayer(Player newPlayerObject)
     {
         Debug.Log("bind player ui to player is called");
-
-        ClearTeamSelectBTNListeners();
 
         player = newPlayerObject;
         if (player == null)
@@ -67,24 +63,12 @@ public class PlayerUI : MonoBehaviour
         
         player.onCharacterBaseStatLevelChange += (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
         
-        team1BTN.onClick.AddListener(() =>
-        {
-            player.SetTeamNumber(1);
-        });
-
-        team2BTN.onClick.AddListener(() =>
-        {
-            player.SetTeamNumber(2);
-        });
+        
 
         player.CallChangeCharacterBaseStatLevelsServerRpc(0, 0, 0);
     }
 
-    private void ClearTeamSelectBTNListeners()
-    {
-        team1BTN.onClick.RemoveAllListeners();
-        team2BTN.onClick.RemoveAllListeners();
-    }
+    
 
     private void UpdateCharacterBaseStatLevelDisplay(int newBubbleCountLevel, int newBubblePowerLevel, int newMoveSpeedLevel)
     {

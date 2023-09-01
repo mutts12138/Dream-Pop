@@ -22,6 +22,9 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI player7Text;
     [SerializeField] private TextMeshProUGUI player8Text;
 
+    [SerializeField] private Button team1BTN;
+    [SerializeField] private Button team2BTN;
+
     private LobbyManager lobbyManager;
     // Start is called before the first frame update
     void Awake()
@@ -31,28 +34,39 @@ public class LobbyUI : MonoBehaviour
         
         StartGameBTN.onClick.AddListener(() =>
         {
-            lobbyManager.LoadScene();
-        });    
+            lobbyManager.LoadGameScene();
+        });
 
+        team1BTN.onClick.AddListener(() =>
+        {
+            SetPlayerTeamNumberServerRpc(1);
+        });
+
+        team2BTN.onClick.AddListener(() =>
+        {
+            SetPlayerTeamNumberServerRpc(2);
+        });
     }
 
     private void Start()
     {
         //subscribe lobbylist change delegate
-        lobbyManager.GetPlayersInLobby().OnListChanged += (NetworkListEvent<PlayerData> changeEvent) => { UpdatePlayerLobby(); };
+        PlayerDataManager.Instance.GetPlayerConnectedList().OnListChanged += (NetworkListEvent<PlayerData> changeEvent) => { UpdatePlayerLobby(); };
     }
 
     private void OnDisable()
     {
         //do i need to unsub startgamebtn.conclick?
         StartGameBTN.onClick.RemoveAllListeners();
-        lobbyManager.GetPlayersInLobby().OnListChanged -= (NetworkListEvent<PlayerData> changeEvent) => { UpdatePlayerLobby(); };
+        team1BTN.onClick.RemoveAllListeners();
+        team2BTN.onClick.RemoveAllListeners();
+        PlayerDataManager.Instance.GetPlayerConnectedList().OnListChanged -= (NetworkListEvent<PlayerData> changeEvent) => { UpdatePlayerLobby(); };
     }
 
     private void UpdatePlayerLobby()
     {
         int index = 0;
-        foreach (PlayerData player in lobbyManager.GetPlayersInLobby())
+        foreach (PlayerData player in PlayerDataManager.Instance.GetPlayerConnectedList())
         {
             if (player.isConnected == true)
             {
@@ -122,6 +136,16 @@ public class LobbyUI : MonoBehaviour
             
     }
 
+    private void SetPlayerTeamNumberServerRpc(int teamNumber)
+    {
+        Player player = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject().GetComponent<Player>();
+        if (player == null)
+        {
+            Debug.Log("cant set team Number, player is null");
+            return;
+        }
 
+        player.SetTeamNumberServerRpc(teamNumber);
+    }
     
 }

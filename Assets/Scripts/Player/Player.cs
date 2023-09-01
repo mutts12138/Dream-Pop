@@ -12,16 +12,14 @@ using UnityEngine.UIElements;
 public class Player : NetworkBehaviour
 {
     //underscore the private variables.
-    private GameManager gameManager;
-    
     private GameInput gameInput;
     [SerializeField] private DreamBubble dreamBubble;
 
     //team
 
-    private ulong clientID;
+    private NetworkVariable<ulong> ownerClientID;
 
-    private NetworkVariable<int> teamNumber = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    private NetworkVariable<int> teamNumber;
     
 
     
@@ -63,10 +61,10 @@ public class Player : NetworkBehaviour
         asleep,
         death
     };
-    
-    private NetworkVariable<PlayerStates> currentPlayerState = new NetworkVariable<PlayerStates>(PlayerStates.normal, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
-    private NetworkVariable<int> currentLayer = new NetworkVariable<int>(3, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    private NetworkVariable<PlayerStates> currentPlayerState;
+
+    private NetworkVariable<int> currentLayer;
 
     //not yet implemented
     private NetworkVariable<bool> playerColliderEnabled = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -102,6 +100,14 @@ public class Player : NetworkBehaviour
         public int newBubbleCountLevel;
     }
 
+
+    private void Awake()
+    {
+        ownerClientID = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        teamNumber = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        currentPlayerState = new NetworkVariable<PlayerStates>(PlayerStates.normal, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        currentLayer = new NetworkVariable<int>(3, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    }
     public override void OnNetworkSpawn()
     {
         //Get layermask list string name
@@ -115,8 +121,6 @@ public class Player : NetworkBehaviour
         if (!IsOwner) return;
 
         //connect game manager
-
-        gameManager = FindObjectOfType<GameManager>();
 
         //connect input 
         gameInput = FindObjectOfType<GameInput>();
@@ -132,9 +136,15 @@ public class Player : NetworkBehaviour
         //event subscribe
         currentPlayerState.OnValueChanged += (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
 
+
+        if(PlayerDataManager.Instance != null)
+        {
+            teamNumber.OnValueChanged += (int previousTeamNumber, int newTeamNumber) => { PlayerDataManager.Instance.SetPlayerTeamNumberServerRpc(ownerClientID.Value, newTeamNumber); };
+        }
         
 
-        
+
+
 
         //set character and Stats
         SetInitialStats();
@@ -163,10 +173,10 @@ public class Player : NetworkBehaviour
         CallChangeCharacterBaseStatLevelsServerRpc(3, 2, 2);
 
         //gravity
-        if(gameManager != null)
+        if(GameManager.Instance != null)
         {
-            gravityAcc = gameManager.GetGlobalGravityAcc();
-            gravityMaxSpeed = gameManager.GetGlobalGravityMaxSpeed();
+            gravityAcc = GameManager.Instance.GetGlobalGravityAcc();
+            gravityMaxSpeed = GameManager.Instance.GetGlobalGravityMaxSpeed();
         }
         else
         {
@@ -267,7 +277,7 @@ public class Player : NetworkBehaviour
 
             //Debug.Log(this);
 
-            dreamBubbleTransform.SetPlayer(this);
+            dreamBubbleTransform.SetPlayer(gameObject.GetComponent<Player>());
             dreamBubbleTransform.SetPopPowerDistance(bubblePowerLevel);
 
             ChangeBubbleCountClientRpc(1);
@@ -586,7 +596,7 @@ public class Player : NetworkBehaviour
 
     }
 
-    private void ChangeLayer(int layerNumber)
+    public void ChangeLayer(int layerNumber)
     {
 
         gameObject.layer = LayerMask.NameToLayer(layers[layerNumber]);
@@ -601,20 +611,26 @@ public class Player : NetworkBehaviour
     //get and set
     public ulong GetClientId()
     {
-        return clientID;
+        return ownerClientID.Value;
     }
     public void SetClientId(ulong clientID)
     {
-        this.clientID = clientID;
+        this.ownerClientID.Value = clientID;
     }
-    public float GetTeamNumber()
+    public int GetTeamNumber()
     {
 
         return teamNumber.Value;
         
     }
 
-    
+    [ServerRpc]
+    public void SetTeamNumberServerRpc(int newTeamNumber)
+    {
+        teamNumber.Value = newTeamNumber;
+        Debug.Log(GetTeamNumber());
+    }
+
     public void SetTeamNumber(int newTeamNumber)
     {
         teamNumber.Value = newTeamNumber;
@@ -648,7 +664,7 @@ public class Player : NetworkBehaviour
 
     }
 
-    
+
    
     
 }

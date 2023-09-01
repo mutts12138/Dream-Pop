@@ -172,8 +172,8 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         Collider[] colliders = Physics.OverlapBox(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), new Vector3(1, 1, 1), transform.rotation, layerMask);
         foreach (Collider col in colliders)
         {
-            if (col.gameObject.TryGetComponent<Player> (out player)){
-                player.InflateBubblePushUpClientRpc();
+            if (col.gameObject.TryGetComponent<Player> (out Player playersOnTop)){
+                playersOnTop.InflateBubblePushUpClientRpc();
             }
             else
             {
@@ -325,6 +325,11 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
                         {
                             if (player.GetCurrentPlayerState() == Player.PlayerStates.normal)
                             {
+                                //change player layer on server to prevent multiple procs
+                                //"playerAsleep" = 7
+                                //ChangeLayer(7);
+                                player.ChangeLayer(7);
+
                                 player.SetCurrentPlayerStateClientRpc(Player.PlayerStates.asleep);
                                 //Debug.Log("playerHit");
                             }
@@ -338,9 +343,12 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         }
         else
         {
+            Debug.Log("Restore bubblecount to: " + player.GetClientId());
             player.ChangeBubbleCountClientRpc(-1);
 
             gameObject.GetComponent<NetworkObject>().Despawn();
+
+            //disable instead of destroy
             Destroy(gameObject);
         }
         
