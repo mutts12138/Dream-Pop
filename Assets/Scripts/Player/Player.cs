@@ -664,7 +664,11 @@ public class Player : NetworkBehaviour
 
     }
 
-
-   
+    [ClientRpc]
+   public void SetPlayerPositionClientRpc(Vector3 newPosition)
+    {
+        if (!IsOwner) return;
+        transform.position = newPosition;
+    }
     
 }

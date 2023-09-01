@@ -108,11 +108,14 @@ public class GameManager : NetworkBehaviour
 
         playerObj.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
 
-        playerObj.transform.position = AssignSpawnPointPosition(playerObj.GetTeamNumber());
-
         playerObj.SetClientId(clientId);
 
         playerObj.SetTeamNumber(teamNumber);
+
+        Debug.Log(teamNumber);
+
+        Vector3 spawnPosition = AssignSpawnPointPosition(playerObj.GetTeamNumber());
+        playerObj.SetPlayerPositionClientRpc(spawnPosition);
 
         //playerObj.GetComponent<NetworkObject>().Spawn(true);
         //Debug.Log("ClientID: " + clientID + "_playerObject Spawned");

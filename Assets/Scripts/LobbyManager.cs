@@ -58,16 +58,18 @@ public class LobbyManager : NetworkBehaviour
 
     private void OnDisable()
     {
-        
-        if(NetworkManager.Singleton != null)
+
+        if (!IsServer) return;
+
+        if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.OnClientConnectedCallback -= (ulong clientID) => { AddPlayerToLobby(clientID); };
             NetworkManager.Singleton.OnClientDisconnectCallback -= (ulong clientID) => { RemovePlayerFromLobby(clientID); };
-            //gameObject.GetComponent<NetworkObject>().Despawn();
+            
         }
-        
 
-        
+        gameObject.GetComponent<NetworkObject>().Despawn();
+
         //NetworkManager.SceneManager.OnLoadEventCompleted -= (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => { SpawnAllPlayerObjectsToLobby(clientsCompleted, clientsTimedOut); };
     }
 
