@@ -9,12 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2039916316f438b42ab1721a0480e137, type: 3}
-  m_Name: bubbleUp
+  m_Script: {fileID: 11500000, guid: b6e95e3d9fc608540b0686b0032ec0b9, type: 3}
+  m_Name: PowerUp
   m_EditorClassIdentifier: 
-  prefab: {fileID: 7664463568506714761, guid: a9e5b690ee7b58a41b7f7bb7677efcd4, type: 3}
-  objectName: Bubble Up
-  bubbleUp: 1
-  powerUp: 0
-  speedUp: 0
-  dreamFragCount: 0
+  objectName: 
+  prefab: {fileID: 0}
+  IsPickUpStacked: 1
+  deltaBubbleCountLevel: 0
+  deltaBubblePowerLevel: 1
+  deltaMoveSpeedLevel: 0

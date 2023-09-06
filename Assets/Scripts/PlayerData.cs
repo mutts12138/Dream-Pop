@@ -8,18 +8,21 @@ public struct PlayerData : INetworkSerializable, IEquatable<PlayerData>
 {
     public bool isConnected;
     public ulong clientID;
+    public int teamNumber;
 
 
     public PlayerData(ulong newClientID)
     {
-        isConnected = false;
-        clientID = newClientID; 
+        isConnected = true;
+        clientID = newClientID;
+        teamNumber = 1;
     }
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref isConnected);
         serializer.SerializeValue(ref clientID);
+        serializer.SerializeValue(ref teamNumber);
     }
 
 
@@ -34,6 +37,13 @@ public struct PlayerData : INetworkSerializable, IEquatable<PlayerData>
         isConnected = false;
         clientID = 404;
     }
+
+    public void SetTeamNumber(int newTeamNumber)
+    {
+        teamNumber = newTeamNumber;
+    }
+
+
 
     public bool Equals(PlayerData other)
     {

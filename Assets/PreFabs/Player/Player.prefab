@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8745314787293019194}
   - component: {fileID: 903386026664709678}
   - component: {fileID: 3976608971896413514}
+  - component: {fileID: 5667525261643247506}
   m_Layer: 3
   m_Name: Player
   m_TagString: Untagged
@@ -27,6 +28,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5743604719478548044}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -34,7 +36,6 @@ Transform:
   m_Children:
   - {fileID: 5237953837757194722}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &9030978610478910566
 CapsuleCollider:
@@ -73,7 +74,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dreamBubble: {fileID: 2119159842293962190, guid: 21e96035b739faa46b012741a81d945d,
     type: 3}
-  playerNumber: 0
+  currentMoveSpeedLevel: 0
 --- !u!114 &903386026664709678
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -91,6 +92,7 @@ MonoBehaviour:
   SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
 --- !u!114 &3976608971896413514
@@ -123,6 +125,18 @@ MonoBehaviour:
   InLocalSpace: 0
   Interpolate: 0
   SlerpPosition: 0
+--- !u!114 &5667525261643247506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5743604719478548044}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6518e1682679be94ba3a89759367b2a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8735901562253790601
 GameObject:
   m_ObjectHideFlags: 0
@@ -149,6 +163,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8735901562253790601}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -156,7 +171,6 @@ Transform:
   m_Children:
   - {fileID: 5246917522386044074}
   m_Father: {fileID: 4178322504002562081}
-  m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &855022057526758653
 Animator:

@@ -4,20 +4,19 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
 using JetBrains.Annotations;
+using UnityEngine.UI;
 
 public class LobbyManager : NetworkBehaviour
 {
-
-
-    // Start is called before the first frame update
-    private static NetworkList<PlayerData> playersInLobby;
-
     public static LobbyManager Instance { get; private set; }
 
-    
+
 
     //temp
     [SerializeField] private Player playerPreFab;
+    [SerializeField] private GameManager gameManagerPreFab;
+
+    
 
     private void Awake()
     {
@@ -29,13 +28,7 @@ public class LobbyManager : NetworkBehaviour
 
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
-
-
-        playersInLobby = new NetworkList<PlayerData>(new PlayerData[8], NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        
-
-        
+ 
     }
 
     // Update is called once per frame
@@ -46,65 +39,49 @@ public class LobbyManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        //add self to Lobby
-        if (!IsServer) return;
 
-        ulong emptyClientID = 404;
-        PlayerData emptyPlayer = new PlayerData(emptyClientID);
-        emptyPlayer.Disconnected();
-        for (int i = 0; i < playersInLobby.Count; i++)
-        {
-            playersInLobby[i] = emptyPlayer;
-        }
+        
+
+        if (!IsServer) return;
 
 
         NetworkManager.Singleton.OnClientConnectedCallback += (ulong clientID) => { AddPlayerToLobby(clientID); };
         NetworkManager.Singleton.OnClientDisconnectCallback += (ulong clientID) => { RemovePlayerFromLobby(clientID); };
 
+
+        //This is for returning back to lobby after a game is complete: shouldnt be placed here
         //NetworkManager.SceneManager.OnLoadComplete += (ulong clientId, string sceneName, LoadSceneMode loadSceneMode) => { };
-        NetworkManager.SceneManager.OnLoadEventCompleted += (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => { SpawnAllPlayerObjects(clientsCompleted , clientsTimedOut); };
+        //NetworkManager.SceneManager.OnLoadEventCompleted += (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => { SpawnAllPlayerObjectsToLobby(clientsCompleted , clientsTimedOut); };
 
         
     }
 
-    
+    private void OnDisable()
+    {
+
+        if (!IsServer) return;
+
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnClientConnectedCallback -= (ulong clientID) => { AddPlayerToLobby(clientID); };
+            NetworkManager.Singleton.OnClientDisconnectCallback -= (ulong clientID) => { RemovePlayerFromLobby(clientID); };
+            
+        }
+
+        gameObject.GetComponent<NetworkObject>().Despawn();
+
+        //NetworkManager.SceneManager.OnLoadEventCompleted -= (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => { SpawnAllPlayerObjectsToLobby(clientsCompleted, clientsTimedOut); };
+    }
 
     private void AddPlayerToLobby(ulong clientID)
     {
         //call it when a new client has connected
         if (!IsServer) return;
 
-        
-
-        PlayerData newPlayer = new PlayerData(clientID);
-        newPlayer.Connected();
-        
-        
-        for (int i = 0; i < playersInLobby.Count; i++)
-        {
-            if (playersInLobby[i].isConnected == false)
-            { 
-                playersInLobby[i] = newPlayer;
-
-                break;
-            }
-        }
-
+        PlayerDataManager.Instance.AddNewPlayerToPlayerConnectedList(clientID);
 
         //spawn playerObject for clients
-        SpawnPlayerObjectServerRpc(clientID);
-
-        
-        //print amount of players in lobby
-        int playerCount = 0;
-        foreach (PlayerData player in playersInLobby)
-        {
-            if (player.isConnected == true)
-            {
-                playerCount++;
-            }
-        }
-        Debug.Log("players in lobby " + playerCount);
+        SpawnPlayerObjectToLobbyServerRpc(clientID);
 
 
         //when maxed out set connection approval to false
@@ -114,25 +91,21 @@ public class LobbyManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        ulong emptyClientID = 404;
-        PlayerData emptyPlayer = new PlayerData(emptyClientID);
-        emptyPlayer.Disconnected();
-
-        for (int i = 0; i < playersInLobby.Count; i++)
-        {
-            if (playersInLobby[i].clientID == clientID)
-            {
-                playersInLobby[i] = emptyPlayer; break;
-            }
-        }
+        PlayerDataManager.Instance.RemovePlayerFromPlayerConnectedList(clientID);
     }
 
     
-    
 
     
-    public void LoadScene()
+    public void LoadGameScene()
     {
+        //create game manager based on map
+        GameManager gameManager = Instantiate(gameManagerPreFab);
+        gameManager.GetComponent<NetworkObject>().Spawn(true);
+
+        //do the scene event sub here
+
+
         //SceneManager.LoadScene(1);
         NetworkManager.SceneManager.LoadScene("TestMap", LoadSceneMode.Single);
         
@@ -140,7 +113,7 @@ public class LobbyManager : NetworkBehaviour
 
 
     [ServerRpc]
-    public void SpawnPlayerObjectServerRpc(ulong clientId)
+    public void SpawnPlayerObjectToLobbyServerRpc(ulong clientId)
     {
         
         Player playerObj = Instantiate(playerPreFab);
@@ -158,8 +131,8 @@ public class LobbyManager : NetworkBehaviour
     }
 
 
-    
-    public void SpawnAllPlayerObjects(List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    //calls when coming back to lobby after game ends
+    private void SpawnAllPlayerObjectsToLobby(List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
         if (!IsServer) return;
 
@@ -169,12 +142,12 @@ public class LobbyManager : NetworkBehaviour
 
         foreach (ulong clientID in clientsCompleted)
         {
-            foreach (PlayerData playerData in playersInLobby)
+            foreach (PlayerData playerData in PlayerDataManager.Instance.GetPlayerConnectedList())
             {
                 //Debug.Log(playerData.clientID);
                 if (clientID == playerData.clientID)
                 {
-                    SpawnPlayerObjectServerRpc(playerData.clientID);
+                    SpawnPlayerObjectToLobbyServerRpc(playerData.clientID);
                 }
             }
         }
@@ -183,10 +156,7 @@ public class LobbyManager : NetworkBehaviour
         //client timedout show grey out icon
     }
 
-    public NetworkList<PlayerData> GetPlayersInLobby()
-    {
-        return playersInLobby;
-    }
+    
 
 
 }
