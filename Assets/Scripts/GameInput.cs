@@ -35,6 +35,7 @@ public class GameInput : MonoBehaviour
     private void Jump_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
         OnJump?.Invoke(this, EventArgs.Empty);
+        
     }
 
  

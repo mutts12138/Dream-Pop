@@ -1,3 +1,4 @@
+using Mono.CSharp;
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
@@ -12,18 +13,19 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private Player playerPreFab;
     [SerializeField] private PlayerUI playerUI;
 
-    //maybe get it from map later
-    [SerializeField] private float globalGravityAcc = -100f;
-    [SerializeField] private float globalGravityMaxSpeed = -10f;
+    private float roundTimer;
 
-    
+    private NetworkVariable<GameStates> gameState;
 
-    ulong[] clientIds = new ulong[8];
 
-    delegate void StartGame();
-    private event StartGame OnStartGame;
 
-    private ulong localClientID;
+    public enum GameStates
+    {
+        gameStart,
+        gameInProgress,
+        gamePaused,
+        gameEnd
+    };
 
     //OnServerConnect
     //OnServerAddPlayer
@@ -34,19 +36,21 @@ public class GameManager : NetworkBehaviour
     //playerNumbers
     private void Awake()
     {
+
         if (Instance != null)
         {
             Destroy(gameObject);
             return;
         }
 
-
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
+        gameState = new NetworkVariable<GameStates>(GameStates.gameStart, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         if (!IsServer) return;
 
+        gameState.OnValueChanged += (GameStates previousValue, GameStates newValue) => {  };
         //gameObject.GetComponent<NetworkObject>().Spawn(true);
 
 
@@ -59,23 +63,113 @@ public class GameManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        localClientID = NetworkManager.Singleton.LocalClientId;
         //initialize players
 
         //LobbyManager.Instance.SpawnPlayerObjectClientRpc(localClientID);
 
         
         if (!IsServer) return;
-        NetworkManager.SceneManager.OnLoadEventCompleted += (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => { SpawnAllPlayerObjectsToGame(clientsCompleted, clientsTimedOut); };
+        NetworkManager.SceneManager.OnLoadEventCompleted += (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => 
+        {
+            InitializeRound(sceneName, loadSceneMode, clientsCompleted, clientsTimedOut);
+
+        };
 
     }
 
     private void OnDisable()
     {
-        //NetworkManager.SceneManager.OnLoadEventCompleted += (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => { SpawnAllPlayerObjectsToGame(clientsCompleted, clientsTimedOut); };
+        if (!IsServer) return;
+        NetworkManager.SceneManager.OnLoadEventCompleted -= (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => { InitializeRound(sceneName, loadSceneMode, clientsCompleted, clientsTimedOut); };
     }
 
-    public void SpawnAllPlayerObjectsToGame(List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+
+    private void Update()
+    {
+
+        if (!IsServer) return;
+
+        
+    }
+
+    private void InitializeRound(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
+        //when everyone is loaded
+        //spawn player objects
+        SpawnAllPlayerObjectsToGame(clientsCompleted, clientsTimedOut);
+
+        //Set the round timer for server
+        StartCoroutine(RoundTimerCountDownAsync());
+
+        //set the round timer for client
+        CallRoundTimerCountDownClientRpc();
+    }
+
+    [ClientRpc]
+    private void CallRoundTimerCountDownClientRpc()
+    {
+        StartCoroutine(RoundTimerCountDownAsync());
+        //Enable player input
+    }
+
+    //logic for server, visual for client
+    IEnumerator RoundTimerCountDownAsync()
+    {
+        SetRoundTimer(MapDataManager.Instance.GetRoundTime());
+
+        yield return StartCoroutine(RoundStartCountDown()); ;
+
+        while (roundTimer > 0)
+        {
+            roundTimer -= Time.deltaTime;
+            yield return null;
+        }
+
+        Debug.Log("Game has ended");
+
+        if (IsServer)
+        {
+            gameState.Value = GameStates.gameEnd;
+        }
+    }
+
+    IEnumerator RoundStartCountDown()
+    {
+        yield return new WaitForSeconds(3);
+
+        Debug.Log("game has started");
+
+        if (IsServer)
+        {
+            gameState.Value = GameStates.gameInProgress;
+        }
+        
+
+
+    }
+
+    
+
+
+    //this happens only on server, acts as the true timer
+    private void SetRoundTimer(float roundTime)
+    {
+        roundTimer = roundTime;
+        SetClientRoundTimerClientRpc(roundTime);
+    }
+
+    //this happens only on all clients, acts as a visual time indicator
+    [ClientRpc]
+    private void SetClientRoundTimerClientRpc(float roundTime)
+    {
+        roundTimer = roundTime;
+    }
+
+
+
+    
+
+    private void SpawnAllPlayerObjectsToGame(List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
         if (!IsServer) return;
 
@@ -98,7 +192,7 @@ public class GameManager : NetworkBehaviour
     }
 
     [ServerRpc]
-    public void SpawnPlayerObjectToGameServerRpc(ulong clientId, int teamNumber)
+    private void SpawnPlayerObjectToGameServerRpc(ulong clientId, int teamNumber)
     {
 
         
@@ -137,18 +231,10 @@ public class GameManager : NetworkBehaviour
         
     }
 
-
-    public float GetGlobalGravityAcc()
-    {
-        return globalGravityAcc;
-    }
-
-    public float GetGlobalGravityMaxSpeed()
-    {
-        return globalGravityMaxSpeed;
-    }
+    
 
 
+    
     
     
 }

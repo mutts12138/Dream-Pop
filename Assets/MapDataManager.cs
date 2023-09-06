@@ -8,8 +8,14 @@ public class MapDataManager : MonoBehaviour
 
     [SerializeField] private List<SpawnPoint> spawnPoints = new List<SpawnPoint>();
 
+    [SerializeField] private float globalGravityAcc;
+    [SerializeField] private float globalGravityMaxSpeed;
+
+    [SerializeField] private float roundTime;
+
     private void Awake()
     {
+        
         if (Instance != null)
         {
             Destroy(gameObject);
@@ -23,5 +29,20 @@ public class MapDataManager : MonoBehaviour
     public List<SpawnPoint> GetSpawnPoints()
     {
         return spawnPoints;
+    }
+
+    public float GetGlobalGravityAcc()
+    {
+        return globalGravityAcc;
+    }
+
+    public float GetGlobalGravityMaxSpeed()
+    {
+        return globalGravityMaxSpeed;
+    }
+
+    public float GetRoundTime()
+    {
+        return roundTime;
     }
 }

@@ -1,3 +1,4 @@
+using Mono.CSharp;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,18 +32,33 @@ public class Player : NetworkBehaviour
     private const float rotateSpeed = 15f;
     private const float jumpAcc = 20f;
 
-    //variables
-    private float baseMoveSpeed;
-    private int currentMoveSpeedLevel;
-    private int maxMoveSpeedLevel;
-
-    private int bubbleCount;
-    private int currentBubbleCountLevel;
-    private int maxBubbleCountLevel;
+    //variables, make these stacks
+    private bool canMove = true;
+    private bool canJump = true;
+    private bool canPlaceDB = true;
+    private bool canUseAbility = true;
+    private bool canUseItem = true;
+    private bool canRespawn = true;
 
     
+    private float baseMoveSpeed;
+    public int currentMoveSpeedLevel;
+    private int minMoveSpeedLevel;
+    private int maxMoveSpeedLevel;
+
+    //currentBubbleCount used to count bubbles players placed in scene
+    private int currentBubbleCount;
+    
+    private int currentBubbleCountLevel;
+    private int minBubbleCountLevel;
+    private int maxBubbleCountLevel;
+
+    //bubble power
     private int currentBubblePowerLevel;
+    private int minBubblePowerLevel;
     private int maxBubblePowerLevel;
+   
+
 
     //resource in using abilities
     private int dreamFragCount;
@@ -74,13 +90,6 @@ public class Player : NetworkBehaviour
     private bool isGrounded = true;
 
 
-    private bool canMove = true;
-    private bool canJump = true;
-    private bool canPlaceDB = true;
-    private bool canUseAbility = true;
-    private bool canUseItem = true;
-    private bool canRespawn = true;
-
     const float asleepTimeBase = 6f;
     private float asleepTimer = asleepTimeBase;
 
@@ -105,6 +114,7 @@ public class Player : NetworkBehaviour
     {
         ownerClientID = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         teamNumber = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
         currentPlayerState = new NetworkVariable<PlayerStates>(PlayerStates.normal, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         currentLayer = new NetworkVariable<int>(3, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     }
@@ -172,11 +182,12 @@ public class Player : NetworkBehaviour
         //set initial stats : movementspeed,bubble count, bubble power
         CallChangeCharacterBaseStatLevelsServerRpc(3, 2, 2);
 
+
         //gravity
-        if(GameManager.Instance != null)
+        if(MapDataManager.Instance != null)
         {
-            gravityAcc = GameManager.Instance.GetGlobalGravityAcc();
-            gravityMaxSpeed = GameManager.Instance.GetGlobalGravityMaxSpeed();
+            gravityAcc = MapDataManager.Instance.GetGlobalGravityAcc();
+            gravityMaxSpeed = MapDataManager.Instance.GetGlobalGravityMaxSpeed();
         }
         else
         {
@@ -193,7 +204,7 @@ public class Player : NetworkBehaviour
     {
         if (IsServer)
         {
-            HandlePickUpCollision();
+            
         }
         
 
@@ -214,6 +225,7 @@ public class Player : NetworkBehaviour
 
         //player state
 
+        //make this coroutine
         if (currentPlayerState.Value == PlayerStates.asleep)
         {
             HandleAsleep();
@@ -224,99 +236,17 @@ public class Player : NetworkBehaviour
 
     //INCLUDE JUMPPING INPUT?
     //movement
-
-    private void GameInput_OnJump(object sender, System.EventArgs e)
-    {
-        if (canJump)
-        {
-            if (isGrounded)
-            {
-                verticalVelocity += jumpAcc;
-                //Debug.Log("Jumped");
-                HandleVerticalVelocity();
-                isGrounded = false;
-            }
-        }
-    }
-
-
-    //place bubble
-    private void GameInput_OnPlaceBubble(object sender, System.EventArgs e)
-    {
-        //Debug.Log(bubbleCount);
-        //Debug.Log(currentBubbleCountLevel);
-        //check to see if player is grounded
-        //check to see if player has reached bubbleCountLimit
-
-        if (bubbleCount < currentBubbleCountLevel)
-        {
-            PlaceDreamBubbleServerRpc(currentBubblePowerLevel);
-        }
-
-        
-    }
-
-    [ServerRpc]
-    private void PlaceDreamBubbleServerRpc(int bubblePowerLevel)
-    {
-        
-        //make it active.deactive, transform out of sight, avoid instantiate.destroy, instantiate only when bubbleUp
-        //snap dreambubble
-        //check if a dreambubble already exist at current location
-        Vector3 dreamBubbleLocation = new Vector3(MathF.Round(gameObject.transform.position.x / 2) * 2, gameObject.transform.position.y +1, MathF.Round(gameObject.transform.position.z / 2) * 2);
-
-        int layerMask;
-        int layerNumber = 6;
-        layerMask = 1 << layerNumber;
-
-        if(Physics.OverlapSphere(dreamBubbleLocation, 0.5f, layerMask).Length <= 0)
-        {
-            DreamBubble dreamBubbleTransform = Instantiate(dreamBubble);
-            dreamBubbleTransform.transform.position = dreamBubbleLocation;
-            dreamBubbleTransform.GetComponent<NetworkObject>().Spawn(true);
-
-            //Debug.Log(this);
-
-            dreamBubbleTransform.SetPlayer(gameObject.GetComponent<Player>());
-            dreamBubbleTransform.SetPopPowerDistance(bubblePowerLevel);
-
-            ChangeBubbleCountClientRpc(1);
-        }
-
-        //no snap dreambubble
-        /*dreamBubbleTransform = Instantiate(dreamBubble);
-        dreamBubbleTransform.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
-        */
-    }
-
-    
-
-    [ClientRpc]
-    public void ChangeBubbleCountClientRpc(int deltaBubbleCount)
-    {
-        if (!IsOwner) return;
-        bubbleCount += deltaBubbleCount;
-        Mathf.Clamp(bubbleCount, 0, currentBubbleCountLevel);
-    }
-
-    [ClientRpc]
-    public void InflateBubblePushUpClientRpc()
-    {
-        if (!IsOwner) return;
-        transform.position += new Vector3(0, 2, 0);
-    }
-
     private void HandleMovement()
     {
         //for detecting collision
-        float moveSpeed = baseMoveSpeed * currentMoveSpeedLevel;
-        float moveMaxDistance = baseMoveSpeed * Time.deltaTime;
+        
+        float moveMaxDistance = baseMoveSpeed * currentMoveSpeedLevel * Time.deltaTime;
 
         //get movement input
         Vector2 inputVector = Vector3.zero;
         if (gameInput != null)
         {
-             inputVector = gameInput.GetMovementVectorNormalized();
+            inputVector = gameInput.GetMovementVectorNormalized();
         }
 
         Vector3 moveDir = new Vector3(inputVector.x, 0f, inputVector.y);
@@ -363,12 +293,95 @@ public class Player : NetworkBehaviour
             //execute movement
             transform.position += moveDir * moveMaxDistance;
         }
-            
+
         //set animation state
         isRunning = moveDir != Vector3.zero;
-        
+
+
+    }
+
+    private void GameInput_OnJump(object sender, System.EventArgs e)
+    {
+        if (canJump)
+        {
+            if (isGrounded)
+            {
+                verticalVelocity += jumpAcc;
+                //Debug.Log("Jumped");
+                HandleVerticalVelocity();
+                isGrounded = false;
+            }
+        }
+    }
+
+
+    //place bubble
+    private void GameInput_OnPlaceBubble(object sender, System.EventArgs e)
+    {
+        //Debug.Log(bubbleCount);
+        //Debug.Log(currentBubbleCountLevel);
+        //check to see if player is grounded
+        //check to see if player has reached bubbleCountLimit
+
+        if (currentBubbleCount < currentBubbleCountLevel)
+        {
+            PlaceDreamBubbleServerRpc(currentBubblePowerLevel);
+        }
+
         
     }
+
+    [ServerRpc]
+    private void PlaceDreamBubbleServerRpc(int bubblePowerLevel)
+    {
+        
+        //make it active.deactive, transform out of sight, avoid instantiate.destroy, instantiate only when bubbleUp
+        //snap dreambubble
+        //check if a dreambubble already exist at current location
+        Vector3 dreamBubbleLocation = new Vector3(MathF.Round(gameObject.transform.position.x / 2) * 2, gameObject.transform.position.y +1, MathF.Round(gameObject.transform.position.z / 2) * 2);
+
+        int layerMask;
+        int layerNumber = 6;
+        layerMask = 1 << layerNumber;
+
+        if(Physics.OverlapSphere(dreamBubbleLocation, 0.5f, layerMask).Length <= 0)
+        {
+            DreamBubble dreamBubbleTransform = Instantiate(dreamBubble);
+            dreamBubbleTransform.transform.position = dreamBubbleLocation;
+            dreamBubbleTransform.GetComponent<NetworkObject>().Spawn(true);
+
+            //Debug.Log(this);
+
+            dreamBubbleTransform.SetPlayer(gameObject.GetComponent<Player>());
+            dreamBubbleTransform.SetPopPowerDistance(bubblePowerLevel);
+
+            ChangeBubbleCountClientRpc(1);
+        }
+
+        //no snap dreambubble
+        /*dreamBubbleTransform = Instantiate(dreamBubble);
+        dreamBubbleTransform.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
+        */
+    }
+
+    [ClientRpc]
+    public void ChangeBubbleCountClientRpc(int deltaBubbleCount)
+    {
+        if (!IsOwner) return;
+        currentBubbleCount += deltaBubbleCount;
+        Mathf.Clamp(currentBubbleCount, 0, currentBubbleCountLevel);
+    }
+
+    [ClientRpc]
+    public void InflateBubblePushUpClientRpc()
+    {
+        if (!IsOwner) return;
+        transform.position += new Vector3(0, 2, 0);
+    }
+
+
+
+
 
 
     private void CheckIsGrounded()
@@ -402,7 +415,6 @@ public class Player : NetworkBehaviour
             }
         }
     }
-
     private void HandleVerticalVelocity()
     {
         transform.position += Vector3.up * verticalVelocity * Time.deltaTime;
@@ -411,33 +423,10 @@ public class Player : NetworkBehaviour
 
 
 
-   //let server run this update
-   private void HandlePickUpCollision()
-    {
-        //player capsule
-        Vector3 capsuleBotPoint = new Vector3(transform.position.x, transform.position.y + (playerRadius) + 0.01f, transform.position.z);
-        Vector3 capsuleTopPoint = transform.position + (Vector3.up * (playerHeight - (playerRadius) - 0.01f));
-        float capsuleRadius = playerRadius + 0.5f;
-
-        int layerNumber = 9;
-        int layerMask;
-        layerMask = 1 << layerNumber;
-
-        //check collision
-        Collider[] pickUpColliders = Physics.OverlapCapsule(capsuleBotPoint, capsuleTopPoint, capsuleRadius, layerMask);
-
-        foreach (Collider pickUpCollider in pickUpColliders)
-        {
-            pickUpCollider.gameObject.TryGetComponent<PickUp>(out PickUp pickUp);
-
-            
-            pickUp.PlayerPickedUp(this);
-        }
-
-    }
+   
 
 
-
+    //is this unnecessay
     [ServerRpc]
     public void CallChangeCharacterBaseStatLevelsServerRpc(int deltaMoveSpeedLevel, int deltaBubbleCountLevel, int deltaBubblePowerLevel)
     {
@@ -461,6 +450,7 @@ public class Player : NetworkBehaviour
         //updates UI
         onCharacterBaseStatLevelChange?.Invoke(this, new CharacterBaseStatLevelChangeEventArgs {newBubbleCountLevel = currentBubbleCountLevel, newMoveSpeedLevel = currentMoveSpeedLevel, newBubblePowerLevel = currentBubblePowerLevel});
     }
+
 
 
 
@@ -515,11 +505,16 @@ public class Player : NetworkBehaviour
     }
 
 
+
+
     private void Respawn()
     {
         ChangeToNormalState();
         Debug.Log("respawn");
     }
+
+
+
 
 
     private void ApplyPlayerState()
@@ -540,7 +535,7 @@ public class Player : NetworkBehaviour
                 break;
         }
     }
-    
+
     private void ChangeToNormalState()
     {
         //"player" = 3
@@ -548,7 +543,7 @@ public class Player : NetworkBehaviour
         currentLayer.Value = 3;
 
         canMove = true;
-        canJump = true;
+        //canJump = true;
         canUseAbility = true;
         canUseItem = true;
         canPlaceDB = false;
@@ -557,6 +552,7 @@ public class Player : NetworkBehaviour
         m_Collider.enabled = true;
     }
 
+    //make it into a debuff
     private void ChangeToAsleepState()
     {
         //"playerAsleep" = 7
@@ -564,7 +560,7 @@ public class Player : NetworkBehaviour
         currentLayer.Value = 7;
 
         canMove = false;
-        canJump = false;
+        //canJump = false;
         canUseAbility = false;
         canUseItem = false;
         canPlaceDB = false;
@@ -573,17 +569,22 @@ public class Player : NetworkBehaviour
 
     }
 
+    //make it into a debuff
     private void ChangeToDeathState()
     {
         //"playerDead" = 8
         //ChangeLayer(8);
         currentLayer.Value = 8;
 
+        
+
         canMove = false;
-        canJump = false;
+        //canJump = false;
         canUseAbility = false;
         canUseItem = false;
         canPlaceDB = false;
+
+        //remove buffs and debuffs
 
         Collider m_Collider = GetComponent<Collider>();
         m_Collider.enabled = false;
@@ -596,6 +597,8 @@ public class Player : NetworkBehaviour
 
     }
 
+
+
     public void ChangeLayer(int layerNumber)
     {
 
@@ -603,10 +606,15 @@ public class Player : NetworkBehaviour
         Debug.Log("playerObject on layer" + gameObject.layer);
     }
 
-
+    //called when ever a change to stats or buffs/debuffs happen
     
 
 
+
+    IEnumerator Debuff_Asleep()
+    {
+        yield return null;
+    }
 
     //get and set
     public ulong GetClientId()
@@ -671,4 +679,6 @@ public class Player : NetworkBehaviour
         transform.position = newPosition;
     }
     
+
+
 }
