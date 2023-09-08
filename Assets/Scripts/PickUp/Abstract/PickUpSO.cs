@@ -6,7 +6,7 @@ using UnityEngine;
 public abstract class PickUpSO : ScriptableObject
 {
     //holds the pickup visual,sound and values of stat changes?
-    public string objectName;
+    public string pickUpName;
     public Transform prefab;
 
     //attributes

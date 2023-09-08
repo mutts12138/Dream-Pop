@@ -361,6 +361,7 @@ MonoBehaviour:
   dB_popExplosionDownVisual: {fileID: 2965124001639762965}
   dB_popExplosionLeftVisual: {fileID: 2944613849654672139}
   dB_popExplosionRightVisual: {fileID: 4890157130925544091}
+  buffSO: {fileID: 11400000, guid: a51086714b509544bbd1a7c7eaeeb41e, type: 2}
 --- !u!114 &2893753198698477240
 MonoBehaviour:
   m_ObjectHideFlags: 0

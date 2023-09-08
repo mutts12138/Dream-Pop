@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "PickUps/BaseStatLevelsPickUp")]
-public class BaseStatLevelsPickUpSO : PickUpSO
+public class PickUpSO_BaseStatLevels : PickUpSO
 {
     //hold datas.
     public int deltaBubbleCountLevel;
@@ -13,6 +13,6 @@ public class BaseStatLevelsPickUpSO : PickUpSO
     public override PickUp InitializePickUpEffect(PickUpHolder pickUpHolder)
     {
         
-        return new BaseStatLevelsPickUp(this, pickUpHolder);
+        return new PickUp_BaseStatLevels(this, pickUpHolder);
     }
 }

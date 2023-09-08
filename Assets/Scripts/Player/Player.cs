@@ -33,12 +33,16 @@ public class Player : NetworkBehaviour
     private const float jumpAcc = 20f;
 
     //variables, make these stacks
-    private bool canMove = true;
-    private bool canJump = true;
-    private bool canPlaceDB = true;
-    private bool canUseAbility = true;
-    private bool canUseItem = true;
-    private bool canRespawn = true;
+    //== 0 is enabled, != 0 is disabled
+    private int moveDisableStack;
+    private int placeDreamBubbleDisableStack;
+    private int useAbilityDisableStack;
+    private int useItemDisableStack;
+
+    private bool isEliminated;
+    private bool canRespawn;
+
+
 
     
     private float baseMoveSpeed;
@@ -72,13 +76,12 @@ public class Player : NetworkBehaviour
 
     //player state
     //normal: 0, asleep: 1, death: 2
+    /*
     public enum PlayerStates 
     {   normal,
         asleep,
         death
-    };
-
-    private NetworkVariable<PlayerStates> currentPlayerState;
+    };*/
 
     private NetworkVariable<int> currentLayer;
 
@@ -115,7 +118,7 @@ public class Player : NetworkBehaviour
         ownerClientID = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         teamNumber = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-        currentPlayerState = new NetworkVariable<PlayerStates>(PlayerStates.normal, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        //currentPlayerState = new NetworkVariable<PlayerStates>(PlayerStates.normal, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         currentLayer = new NetworkVariable<int>(3, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     }
     public override void OnNetworkSpawn()
@@ -144,7 +147,7 @@ public class Player : NetworkBehaviour
 
 
         //event subscribe
-        currentPlayerState.OnValueChanged += (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
+        //currentPlayerState.OnValueChanged += (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
 
 
         if(PlayerDataManager.Instance != null)
@@ -168,7 +171,7 @@ public class Player : NetworkBehaviour
             gameInput.OnPlaceBubble -= GameInput_OnPlaceBubble;
         }
         
-        currentPlayerState.OnValueChanged -= (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
+        //currentPlayerState.OnValueChanged -= (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
     }
 
     private void SetInitialStats()
@@ -212,7 +215,7 @@ public class Player : NetworkBehaviour
 
         //updates and computes transform if owner
         //else networktransform will synchonize
-        if (canMove)
+        if (moveDisableStack == 0)
         {
             HandleMovement();
         }
@@ -226,11 +229,12 @@ public class Player : NetworkBehaviour
         //player state
 
         //make this coroutine
+        /*
         if (currentPlayerState.Value == PlayerStates.asleep)
         {
             HandleAsleep();
         }
-
+        */
         
     }
 
@@ -300,9 +304,10 @@ public class Player : NetworkBehaviour
 
     }
 
+    /*
     private void GameInput_OnJump(object sender, System.EventArgs e)
     {
-        if (canJump)
+        if (jumpDisableStack == 0)
         {
             if (isGrounded)
             {
@@ -313,7 +318,7 @@ public class Player : NetworkBehaviour
             }
         }
     }
-
+    */
 
     //place bubble
     private void GameInput_OnPlaceBubble(object sender, System.EventArgs e)
@@ -322,6 +327,7 @@ public class Player : NetworkBehaviour
         //Debug.Log(currentBubbleCountLevel);
         //check to see if player is grounded
         //check to see if player has reached bubbleCountLimit
+        if (placeDreamBubbleDisableStack != 0) return;
 
         if (currentBubbleCount < currentBubbleCountLevel)
         {
@@ -454,7 +460,7 @@ public class Player : NetworkBehaviour
 
 
 
-
+    /*
     private void HandleAsleep()
     {
 
@@ -475,48 +481,24 @@ public class Player : NetworkBehaviour
         
     }
 
-
-    private void CheckAsleepCollision()
-    {
-        float asleepRadius = playerRadius;
-
-        int layerMask;
-        int layerNumber = 3;
-        layerMask = 1 << layerNumber;
-
-        Collider[] asleepOverlap = Physics.OverlapSphere(transform.position + Vector3.up, asleepRadius * 2, layerMask);
-        if(asleepOverlap.Length > 0)
-        {
-            if (asleepOverlap[0].gameObject.GetComponent<Player>().GetTeamNumber() == teamNumber.Value)
-            {
-                //get awaken:saved
-                Debug.Log("Saved");
-                SetCurrentPlayerState(PlayerStates.normal);
-            }
-            else
-            {
-                //get rude awaken:death
-                SetCurrentPlayerState(PlayerStates.death);
-                
-                
-            }
-        }
+    
+    
         
-    }
+    }*/
 
 
 
 
     private void Respawn()
     {
-        ChangeToNormalState();
+        //ChangeToNormalState();
         Debug.Log("respawn");
     }
 
 
 
 
-
+    /*
     private void ApplyPlayerState()
     {
         switch (currentPlayerState.Value)
@@ -596,7 +578,7 @@ public class Player : NetworkBehaviour
         }
 
     }
-
+    */
 
 
     public void ChangeLayer(int layerNumber)
@@ -611,10 +593,6 @@ public class Player : NetworkBehaviour
 
 
 
-    IEnumerator Debuff_Asleep()
-    {
-        yield return null;
-    }
 
     //get and set
     public ulong GetClientId()
@@ -650,8 +628,71 @@ public class Player : NetworkBehaviour
         return isRunning;
     }
 
- 
+    //player status get and set
+    /*
+     * private int MoveDisableStack;
 
+    private int PlaceDreamBubbleDisableStack;
+    private int UseAbilityDisableStack;
+    private int UseItemDisableStack;
+
+    private bool isEliminated;
+    private bool canRespawn;
+    */
+    public int GetMoveDisableStack()
+    {
+        return moveDisableStack;
+    }
+
+    public int GetPlaceDreamBubbleDisableStack()
+    {
+        return placeDreamBubbleDisableStack;
+    }
+
+    public int GetUseAbilityDisableStack()
+    {
+        return useAbilityDisableStack;
+    }
+
+    public int GetUseItemDisableStack()
+    {
+        return useItemDisableStack;
+    }
+
+    private bool GetIsEliminated()
+    {
+        return isEliminated;
+    }
+
+    private bool GetCanRespawn()
+    {
+        return canRespawn;
+    }
+    public void AddToMoveDisableStack(int deltaValue)
+    {
+        moveDisableStack += deltaValue;
+    }
+    public void AddToPlaceDreamBubbleDisableStack(int deltaValue)
+    {
+        placeDreamBubbleDisableStack += deltaValue;
+    }
+    public void AddToUseAbilityDisableStack(int deltaValue)
+    {
+        useAbilityDisableStack += deltaValue;
+    }
+    public void AddToUseItemDisableStack(int deltaValue)
+    {
+        useItemDisableStack += deltaValue;
+    }
+    public void SetIsEliminated(bool deltaValue)
+    {
+        isEliminated = deltaValue;
+    }
+    public void SetCanRespawn(bool deltaValue)
+    {
+        canRespawn = deltaValue;
+    }
+    /*
     public PlayerStates GetCurrentPlayerState()
     {
         return currentPlayerState.Value;
@@ -670,15 +711,14 @@ public class Player : NetworkBehaviour
         if (!IsOwner) return;
         currentPlayerState.Value = newPlayerState;
 
-    }
+    }*/
 
     [ClientRpc]
-   public void SetPlayerPositionClientRpc(Vector3 newPosition)
+    public void SetPlayerPositionClientRpc(Vector3 newPosition)
     {
         if (!IsOwner) return;
         transform.position = newPosition;
     }
-    
-
+     
 
 }
