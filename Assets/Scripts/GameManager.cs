@@ -98,6 +98,9 @@ public class GameManager : NetworkBehaviour
         //spawn player objects
         SpawnAllPlayerObjectsToGame(clientsCompleted, clientsTimedOut);
 
+        //bind PlayerUI to player
+
+
         //Set the round timer for server
         StartCoroutine(RoundTimerCountDownAsync());
 

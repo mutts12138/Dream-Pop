@@ -1,3 +1,4 @@
+using Mono.CSharp;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,16 +8,18 @@ using UnityEngine;
 
 public class DreamBubble : NetworkBehaviour, Ipoppable
 {
-    private float popTimer = 3f;
-    private float inflateTimer = 1f;
+    private float timerCountDown = 3.5f;
+    private float popTime = 0.5f;
+    private float inflateTime = 2.5f;
+    private readonly float tickRate = 0.1f;
+
 
     [SerializeField] private float popPowerDistance = 10f;
-    private bool popExplosionEnabled = false;
     private float popExplosionLifeSpan = 0.5f;
     private float gravityScale = -20f;
 
-    private bool canPop = true;
-    private bool inflated = false;
+    private bool isPopped = false;
+    private bool isInflated = false;
 
     [SerializeField] private GameObject dreamBubbleVisual;
     //to get renderer
@@ -30,7 +33,10 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
     float[] explosionRanges;
 
     private Player player;
+
     
+
+    [SerializeField] private BuffSO buffSO;
 
     public override void OnNetworkSpawn()
     {
@@ -48,68 +54,56 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
 
 
         if (!IsServer) return;
-        SetCanPop(true);
-
-
+        StartCoroutine(InflateTimerAsync(tickRate));
+        StartCoroutine(PopTimerAsync(tickRate));
+        
     }
 
     private void Update()
     {
         
         if (!IsServer) return;
-
-        HandleInflateBubble();
-        HandlePopTimer();
-        HandlePopExplosionApplyHit();
-
+        
+        if (timerCountDown > 0)
+        {
+            timerCountDown -= Time.deltaTime;
+        }
 
         HandleGravity();
     }
-    
-    private void HandlePopTimer()
+    IEnumerator InflateTimerAsync(float tickRate)
     {
-        if (GetCanPop() == true)
-        {
-            popTimer -= Time.deltaTime;
-            if (popTimer < 0)
-            {
-                Pop();
-            }
-        }
+        WaitForSeconds waitForSeconds = new WaitForSeconds(tickRate);
         
-    }
 
-
-
-    private void HandleGravity()
-    {
-        float gravity = gravityScale * Time.deltaTime;
-        if (!Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 0.1f, transform.position.z), Vector3.down, out RaycastHit raycastHit, 1f))
+        while (timerCountDown > inflateTime && isInflated == false)
         {
             
-            transform.position -= Vector3.down * gravity;
-        }
-        else
-        {
-            transform.position = new Vector3(transform.position.x, Mathf.Floor(transform.position.y), transform.position.z);
-        }
-        
-    }
-
-    private void HandleInflateBubble()
-    {
-        if (!inflated)
-        {
-            if (!CheckPlayerOnBubble() || inflateTimer < 0)
+            Debug.Log("timer " + timerCountDown.ToString());
+            if (!CheckPlayerOnBubble())
             {
                 InflateBubble();
-            }
-
-            inflateTimer -= Time.deltaTime;
-
+            };
+            yield return waitForSeconds;
         }
+
+        InflateBubble();
     }
 
+    IEnumerator PopTimerAsync(float tickRate)
+    {
+        WaitForSeconds waitForSeconds = new WaitForSeconds(tickRate);
+
+        while (timerCountDown > popTime && isPopped == false)
+        {
+            yield return waitForSeconds;
+        }
+  
+        Pop();  
+    }
+
+
+    //coroutine, lower tick rate
     private bool CheckPlayerOnBubble()
     {
         int playerLayer = 3;
@@ -133,19 +127,14 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         
     }
 
-
-    public bool GetInflated()
-    {
-        return inflated;
-    }
-
     private void InflateBubble()
     {
+        if (isInflated) return;
         //place deflated bubble, visual and collider
         //when player not stepping on it anymore, inflate, boxcastall foreach check if play
         //when player place another bubble, inflate
         //when inflated, everything inside boxcastall get position.y set to this.position.y +1
-        inflated = true;
+        isInflated = true;
 
         //visual
         InflateBubbleVisualClientRpc();
@@ -194,11 +183,15 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
     public void Pop()
     {
         if (!IsServer) return;
+        if (isPopped == true) return;
+        SetIsPopped(true);
+        timerCountDown = popTime;
+
         explosionRanges = CalculateExplosionRanges();
         //visual
         popExplosionEnableVisualClientRpc(explosionRanges);
 
-        popExplosionEnabled = true;
+        StartCoroutine(PopExplosionApplyHitAsync(tickRate));
 
     }
 
@@ -206,7 +199,7 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
     {
         float[] explosionRanges;
         //BUG: sometimes not destroying the block
-        SetCanPop(false);
+        
         gravityScale = 0;
         Vector3 offsetTransformPosition = new Vector3(transform.position.x, transform.position.y + 1f, transform.position.z);
         Ray rayUp = new Ray(offsetTransformPosition, new Vector3(0, 0, 1));
@@ -234,7 +227,7 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
                 if (raycastHit.transform.TryGetComponent(out Ipoppable poppable))
                 {
                     //Debug.Log("got component");
-                    if (poppable.GetCanPop() == true)
+                    if (poppable.GetIsPopped() == false)
                     {
                         //Debug.Log("called pop");
                         poppable.Pop();
@@ -276,23 +269,24 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
     }
 
     //server does the applyhit
-
-    private void HandlePopExplosionApplyHit()
+    //make coroutine, lower tick rate
+    IEnumerator PopExplosionApplyHitAsync(float tickRate)
     {
-        if (popExplosionEnabled == false) return;
-        if (popExplosionLifeSpan > 0)
+        WaitForSeconds waitForSeconds = new WaitForSeconds(tickRate);
+
+        Quaternion newRotation = new Quaternion(1, 0, 0, 0);
+        Vector3 newCenter = new Vector3(0, 0, 0);
+        Vector3 newHalfExtent = new Vector3(0, 0, 0);
+
+        //player  mask
+        int layerNumber = 3;
+        int layerMask;
+        layerMask = 1 << layerNumber;
+
+        while (timerCountDown > 0)
         {
-            if (popExplosionLifeSpan > 0.15)
+            if (timerCountDown > 0.15f)
             {
-                Quaternion newRotation = new Quaternion(1, 0, 0, 0);
-                Vector3 newCenter = new Vector3(0, 0, 0);
-                Vector3 newHalfExtent = new Vector3(0, 0, 0);
-
-                //player  mask
-                int layerNumber = 3;
-                int layerMask;
-                layerMask = 1 << layerNumber;
-
                 //horizontal and vertical hitbox
 
                 for (int i = 0; i < 2; i++)
@@ -320,59 +314,75 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
 
                     foreach (Collider collider in Physics.OverlapBox(newCenter, newHalfExtent, newRotation, layerMask))
                     {
-                        //check if gameobject is player
-                        if (collider.TryGetComponent(out Player player))
-                        {
-                            if (player.GetCurrentPlayerState() == Player.PlayerStates.normal)
-                            {
-                                //change player layer on server to prevent multiple procs
-                                //"playerAsleep" = 7
-                                //ChangeLayer(7);
-                                player.ChangeLayer(7);
+                        //get components
+                        Player playerHitted = collider.GetComponent<Player>();
+                        BuffHolder playerHittedbuffHolder = collider.GetComponent<BuffHolder>();
 
-                                player.SetCurrentPlayerStateClientRpc(Player.PlayerStates.asleep);
-                                //Debug.Log("playerHit");
-                            }
-                        }
+                        //Apply effect
+                        //asleep put as a debuff
+                        playerHittedbuffHolder.AddBuff(buffSO.InitializeBuff(playerHittedbuffHolder));
+                        Debug.Log("player hit, apply asleep debuff");
 
-                    }
 
-                }
+                        //change player layer on server to prevent multiple procs
+                        //"playerAsleep" = 7
+                        //ChangeLayer(7);
+                        //player.SetCurrentPlayerStateClientRpc(Player.PlayerStates.asleep);
+                        //Debug.Log("playerHit");
+                    }  
+                }  
             }
-            popExplosionLifeSpan -= Time.deltaTime;
+            yield return waitForSeconds;
         }
-        else
-        {
-            Debug.Log("Restore bubblecount to: " + player.GetClientId());
-            player.ChangeBubbleCountClientRpc(-1);
 
-            gameObject.GetComponent<NetworkObject>().Despawn();
+        Debug.Log("Restore bubblecount to: " + player.GetClientId());
+        player.ChangeBubbleCountClientRpc(-1);
 
-            //disable instead of destroy
-            Destroy(gameObject);
-        }
-        
+        gameObject.GetComponent<NetworkObject>().Despawn();
 
-        //check item
+        //disable instead of destroy
+        Destroy(gameObject);
     }
+
 
     public void SetPlayer(Player owningPlayer)
     { 
         player = owningPlayer;
     }
 
-    public bool GetCanPop()
+    public bool GetInflated()
     {
-        return canPop;
+        return isInflated;
     }
 
-    public void SetCanPop(bool poppable)
+    public bool GetIsPopped()
     {
-        canPop = poppable;
+        return isPopped;
+    }
+
+    public void SetIsPopped(bool poppable)
+    {
+        isPopped = poppable;
     }
 
     public void SetPopPowerDistance(int bubblePowerLevel)
     {
         popPowerDistance = 2 * bubblePowerLevel;
     }
+
+    private void HandleGravity()
+    {
+        float gravity = gravityScale * Time.deltaTime;
+        if (!Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 0.1f, transform.position.z), Vector3.down, out RaycastHit raycastHit, 1f))
+        {
+
+            transform.position -= Vector3.down * gravity;
+        }
+        else
+        {
+            transform.position = new Vector3(transform.position.x, Mathf.Floor(transform.position.y), transform.position.z);
+        }
+
+    }
+
 }

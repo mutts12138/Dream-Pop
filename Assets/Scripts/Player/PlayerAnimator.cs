@@ -25,8 +25,10 @@ public class PlayerAnimator : NetworkBehaviour
     {
         if (!IsOwner) return;
         animator.SetBool(IS_RUNNING, player.GetIsRunning());
+        /*
         animator.SetBool(IS_ASLEEP, player.GetCurrentPlayerState() == Player.PlayerStates.asleep);
         animator.SetBool(IS_DEAD, player.GetCurrentPlayerState() == Player.PlayerStates.death);
+        */
   
     }
 }

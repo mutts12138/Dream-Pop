@@ -6,8 +6,8 @@ public interface Ipoppable
 {
     void Pop();
 
-    bool GetCanPop();
+    bool GetIsPopped();
 
-    void SetCanPop(bool isPoppable);
+    void SetIsPopped(bool isPoppable);
     
 }

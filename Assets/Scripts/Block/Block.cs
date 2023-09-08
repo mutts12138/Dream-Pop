@@ -43,18 +43,18 @@ public class Block : NetworkBehaviour, Ipoppable
     }
     public  void Pop()
     {
-        SetCanPop(false);
+        SetIsPopped(false);
         gameObject.GetComponent<NetworkObject>().Despawn();
         Destroy(gameObject);
         
     }
 
-    public bool GetCanPop()
+    public bool GetIsPopped()
     {
         return canPop;
     }
 
-    public void SetCanPop(bool poppable)
+    public void SetIsPopped(bool poppable)
     {
         canPop = poppable;
     }

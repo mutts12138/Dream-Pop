@@ -4,6 +4,7 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine.UI;
 using UnityEngine;
+
 using static Player;
 
 public class PlayerUI : MonoBehaviour
@@ -23,6 +24,8 @@ public class PlayerUI : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
+        
+
         BindPlayerUIToLocalClientPlayerObjectBTN.onClick.AddListener(() =>
         {
             if (NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(NetworkManager.Singleton.LocalClientId).GetComponent<Player>() == null)

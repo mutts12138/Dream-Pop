@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BaseStatLevelsPickUp : PickUp
+public class PickUp_BaseStatLevels : PickUp
 {
     private readonly Player player;
 
-    public BaseStatLevelsPickUp(PickUpSO pickUpSO, PickUpHolder pickUpHolder) : base(pickUpSO, pickUpHolder)
+    public PickUp_BaseStatLevels(PickUpSO pickUpSO, PickUpHolder pickUpHolder) : base(pickUpSO, pickUpHolder)
     {
         //initialize additional variables
         player = pickUpHolder.GetComponent<Player>();
@@ -14,7 +14,7 @@ public class BaseStatLevelsPickUp : PickUp
 
     public override void ApplyEffect()
     {
-        BaseStatLevelsPickUpSO baseStatLevelsPickUpSO = (BaseStatLevelsPickUpSO) pickUpSO;
+        PickUpSO_BaseStatLevels baseStatLevelsPickUpSO = (PickUpSO_BaseStatLevels) pickUpSO;
         player.ChangeCharacterBaseStatLevelsClientRpc(baseStatLevelsPickUpSO.deltaMoveSpeedLevel, baseStatLevelsPickUpSO.deltaBubbleCountLevel, baseStatLevelsPickUpSO.deltaBubblePowerLevel);
 
         //get data from SO

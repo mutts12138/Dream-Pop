@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6233123655189440937}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: PickUp_visual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -44,7 +44,7 @@ GameObject:
   - component: {fileID: 2521771412201636865}
   - component: {fileID: 1508529790798631522}
   - component: {fileID: 423901519326908530}
-  m_Layer: 9
+  m_Layer: 7
   m_Name: PickUp
   m_TagString: Untagged
   m_Icon: {fileID: 0}
