@@ -68,6 +68,11 @@ PrefabInstance:
       propertyPath: canPop
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5784484534296088088, guid: d5c8387e37fc21e4a85d03911e32a9dc,
+        type: 3}
+      propertyPath: canBeDestroyed
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5854867463533343647, guid: d5c8387e37fc21e4a85d03911e32a9dc,
         type: 3}
       propertyPath: m_Name

@@ -70,7 +70,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5743604719478548044}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cd5d074206d5ef34e8df8d41992d8553, type: 3}
+  m_Script: {fileID: 11500000, guid: 2b9fa9c960d75e746b2e3b262f90a492, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   dreamBubble: {fileID: 2119159842293962190, guid: 21e96035b739faa46b012741a81d945d,
@@ -124,8 +124,8 @@ MonoBehaviour:
   UseQuaternionCompression: 0
   UseHalfFloatPrecision: 0
   InLocalSpace: 0
-  Interpolate: 0
-  SlerpPosition: 0
+  Interpolate: 1
+  SlerpPosition: 1
 --- !u!114 &5667525261643247506
 MonoBehaviour:
   m_ObjectHideFlags: 0

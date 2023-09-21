@@ -32,7 +32,7 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
 
     float[] explosionRanges;
 
-    private Player player;
+    private PlayerCharacter player;
 
     
 
@@ -161,7 +161,7 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         Collider[] colliders = Physics.OverlapBox(new Vector3(transform.position.x, transform.position.y + 1, transform.position.z), new Vector3(1, 1, 1), transform.rotation, layerMask);
         foreach (Collider col in colliders)
         {
-            if (col.gameObject.TryGetComponent<Player> (out Player playersOnTop)){
+            if (col.gameObject.TryGetComponent<PlayerCharacter> (out PlayerCharacter playersOnTop)){
                 playersOnTop.InflateBubblePushUpClientRpc();
             }
             else
@@ -315,13 +315,17 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
                     foreach (Collider collider in Physics.OverlapBox(newCenter, newHalfExtent, newRotation, layerMask))
                     {
                         //get components
-                        Player playerHitted = collider.GetComponent<Player>();
-                        BuffHolder playerHittedbuffHolder = collider.GetComponent<BuffHolder>();
+                        PlayerCharacter playerHitted = collider.GetComponent<PlayerCharacter>();
+                        BuffHolder playerHittedBuffHolder = collider.GetComponent<BuffHolder>();
 
-                        //Apply effect
-                        //asleep put as a debuff
-                        playerHittedbuffHolder.AddBuff(buffSO.InitializeBuff(playerHittedbuffHolder));
-                        Debug.Log("player hit, apply asleep debuff");
+                        //check if the player is invincible
+                        if (!(playerHitted.GetInvincibleStack() > 0)) {
+                            //Apply effect
+                            //asleep put as a debuff
+                            AddBuffToPlayerHitClientRpc(playerHitted.ownerClientID.Value);
+                            Debug.Log("player hit, apply asleep debuff");
+                        }
+                        
 
 
                         //change player layer on server to prevent multiple procs
@@ -335,17 +339,27 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
             yield return waitForSeconds;
         }
 
-        Debug.Log("Restore bubblecount to: " + player.GetClientId());
+        Debug.Log("Restore bubblecount to: " + player.ownerClientID.Value);
         player.ChangeBubbleCountClientRpc(-1);
 
-        gameObject.GetComponent<NetworkObject>().Despawn();
+        
 
         //disable instead of destroy
         Destroy(gameObject);
     }
 
+    [ClientRpc]
+    public void AddBuffToPlayerHitClientRpc(ulong clientID)
+    {
+        if (NetworkManager.Singleton.LocalClientId != clientID) return;
 
-    public void SetPlayer(Player owningPlayer)
+
+        BuffHolder buffHolder = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject().GetComponent<BuffHolder>();
+        Debug.Log("buffholder == " + buffHolder);
+        buffHolder.AddBuff(buffSO.InitializeBuff(buffHolder));
+    }
+
+    public void SetPlayer(PlayerCharacter owningPlayer)
     { 
         player = owningPlayer;
     }

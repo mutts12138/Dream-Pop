@@ -604,7 +604,7 @@ GameObject:
   - component: {fileID: 8570241019603138078}
   - component: {fileID: 1966015258254742264}
   m_Layer: 0
-  m_Name: Lobby UI
+  m_Name: WaitingRoom UI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

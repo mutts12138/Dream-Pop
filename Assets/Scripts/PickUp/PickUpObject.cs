@@ -97,7 +97,7 @@ public class PickUpObject : NetworkBehaviour
 
 
         //despawn after picked up
-        gameObject.GetComponent<NetworkObject>().Despawn();
+        
         Destroy(gameObject);
     }
 

@@ -1,14 +1,17 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Buff_Asleep : Buff
 {
-    private readonly Player player;
+    private readonly PlayerCharacter player;
     Coroutine runningCoroutine;
+    BuffSO_Asleep buffSO_Asleep;
     public Buff_Asleep(BuffSO buffSO, BuffHolder buffHolder) : base(buffSO, buffHolder)
     {
-        player = buffHolder.GetComponent<Player>();
+        buffSO_Asleep = (BuffSO_Asleep)buffSO;
+        player = buffHolder.GetComponent<PlayerCharacter>();
         Debug.Log(player);
     }
 
@@ -24,6 +27,7 @@ public class Buff_Asleep : Buff
     */
     protected override void ApplyBuffEffect()
     {
+        player.SetIsAsleep(true);
         player.AddToMoveDisableStack(1);
         player.AddToPlaceDreamBubbleDisableStack(1);
         player.AddToUseAbilityDisableStack(1);
@@ -33,7 +37,7 @@ public class Buff_Asleep : Buff
 
     IEnumerator CheckASleepPlayerCollision()
     {
-        float sphereRadius = 0.75f;
+        float sphereRadius = 1f;
 
         WaitForSeconds waitForSeconds = new WaitForSeconds(0.1f);
 
@@ -54,7 +58,7 @@ public class Buff_Asleep : Buff
             {
                 foreach (Collider playerOverlapped in playersOverlapped)
                 {
-                    if (playerOverlapped.gameObject.GetComponent<Player>().GetTeamNumber() == player.GetTeamNumber())
+                    if (playerOverlapped.gameObject.GetComponent<PlayerCharacter>().teamNumber.Value == player.teamNumber.Value)
                     {
                         if (playerOverlapped.gameObject != player.gameObject)
                         {
@@ -88,7 +92,11 @@ public class Buff_Asleep : Buff
                 {
                     //get rude awaken:death
                     Debug.Log("death");
-                    player.SetIsEliminated(true);
+                    buffHolder.AddBuff(buffSO_Asleep.buffSO_Eliminated.InitializeBuff(buffHolder));
+
+                    //buffHolder.AddBuff(buff.buffSO_eliminated.InitializeBuff(buffHolder));
+                    //player.SetIsEliminated(true);\
+                    // apply is eliminated debuff
                 }
 
                 duration = 0;
@@ -99,12 +107,14 @@ public class Buff_Asleep : Buff
 
     public override void BuffEnded()
     {
+        
         if (runningCoroutine != null)
         {
             Debug.Log("Saved");
             player.StopCoroutine(runningCoroutine);
         }
-        
+
+        player.SetIsAsleep(false);
         player.AddToMoveDisableStack(-1);
         player.AddToPlaceDreamBubbleDisableStack(-1);
         player.AddToUseAbilityDisableStack(-1);

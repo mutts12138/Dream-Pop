@@ -5,7 +5,8 @@ using Unity.Netcode;
 using UnityEngine.UI;
 using UnityEngine;
 
-using static Player;
+using static PlayerCharacter;
+using System;
 
 public class PlayerUI : MonoBehaviour
 {
@@ -15,30 +16,27 @@ public class PlayerUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI TMP_power;
     [SerializeField] private TextMeshProUGUI TMP_speed;
 
-    private Player player;
-
-    
-
+    private PlayerCharacter player;
 
 
     // Start is called before the first frame update
     void Awake()
     {
-        
-
         BindPlayerUIToLocalClientPlayerObjectBTN.onClick.AddListener(() =>
         {
-            if (NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(NetworkManager.Singleton.LocalClientId).GetComponent<Player>() == null)
+            Debug.Log(player);
+
+
+            if (NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(NetworkManager.Singleton.LocalClientId).GetComponent<PlayerCharacter>() == null)
             {
                 Debug.Log("Player is null, PlayerUI:SetPlayer failed");
                 return;
             }
-                
-            Player currentLocalPlayerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(NetworkManager.Singleton.LocalClientId).GetComponent<Player>();
-            BindPlayerUIToPlayer(currentLocalPlayerObject);
+
+            CallBindPlayerUIToPlayer();
         });
 
-        
+
     }
 
     private void OnDisable()
@@ -53,25 +51,41 @@ public class PlayerUI : MonoBehaviour
 
     }
 
-    private void BindPlayerUIToPlayer(Player newPlayerObject)
+    
+    public void CallBindPlayerUIToPlayer(PlayerCharacter newPlayer)
     {
-        Debug.Log("bind player ui to player is called");
-
-        player = newPlayerObject;
-        if (player == null)
+        if(player  != null)
         {
-            Debug.Log("Player is null, PlayerUI:SetPlayer failed");
-            return;
+            player.onCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
+
         }
+        player = newPlayer;
+        BindPlayerUIToPlayer();
+    }
+
+    public void CallBindPlayerUIToPlayer()
+    {
+        //if paramater is null bind to local player
+        if (player != null)
+        {
+            player.onCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
+        }
+
+        player = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject().GetComponent<PlayerCharacter>();
         
+        BindPlayerUIToPlayer();
+    }
+
+    private void BindPlayerUIToPlayer()
+    {
+        //Debug.Log("bind player ui to player is called");
+
+
+        //Debug.Log(player);
         player.onCharacterBaseStatLevelChange += (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
-        
-        
 
         player.CallChangeCharacterBaseStatLevelsServerRpc(0, 0, 0);
     }
-
-    
 
     private void UpdateCharacterBaseStatLevelDisplay(int newBubbleCountLevel, int newBubblePowerLevel, int newMoveSpeedLevel)
     {

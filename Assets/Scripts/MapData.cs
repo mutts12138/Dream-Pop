@@ -2,17 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MapDataManager : MonoBehaviour
+public class MapData : MonoBehaviour
 {
-    public static MapDataManager Instance { get; private set; }
+    public static MapData Instance { get; private set; }
 
     [SerializeField] private List<SpawnPoint> spawnPoints = new List<SpawnPoint>();
 
-    [SerializeField] private float globalGravityAcc;
-    [SerializeField] private float globalGravityMaxSpeed;
-
     [SerializeField] private float roundTime;
 
+
+    [SerializeField] private float globalGravityAcc;
+    [SerializeField] private float globalGravityMaxSpeed;
     private void Awake()
     {
         
