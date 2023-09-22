@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -13,8 +14,9 @@ public class CreateRoomUI : MonoBehaviour
     [SerializeField] Button backButton;
 
     [SerializeField] LobbyUI lobbyUI;
+    
 
-
+    
     private void Awake()
     {
         roomNameInputField.onEndEdit.AddListener((string newRoomName) =>
@@ -43,35 +45,24 @@ public class CreateRoomUI : MonoBehaviour
 
         createRoomButton.onClick.AddListener(() =>
         {
-            if ( LobbyManager.Instance.isPrivate == true)
-            {
-                if(LobbyManager.Instance.password != null)
-                {
-                    LobbyManager.Instance.CreateLobby(LobbyManager.Instance.lobbyName, LobbyManager.Instance.isPrivate, LobbyManager.Instance.password);
-                }
-                else
-                {
-                    LobbyManager.Instance.CreateLobby(LobbyManager.Instance.lobbyName, LobbyManager.Instance.isPrivate, LobbyManager.Instance.password);
-                    Debug.Log("password is empty");
-                }
-            }
-            else
-            {
-                LobbyManager.Instance.CreateLobby(LobbyManager.Instance.lobbyName, LobbyManager.Instance.isPrivate, null);
-            }
-            
-
+            LobbyManager.Instance.CreateLobby(LobbyManager.Instance.lobbyName, LobbyManager.Instance.isPrivate, LobbyManager.Instance.password);
         });
 
         backButton.onClick.AddListener(() =>
         {
             Hide();
-            lobbyUI.Show();
         });
 
-        Hide();
+        
     }
 
+    private void Start()
+    {
+
+
+        passwordInputField.interactable = false;
+        Hide();
+    }
     public void Show()
     {
         gameObject.SetActive(true);

@@ -19,6 +19,8 @@ using UnityEngine.SceneManagement;
 public class LobbyManager : MonoBehaviour
 {
     public static LobbyManager Instance;
+
+    
     //lobby is not real time connection, its all about polling
     //lobby has automatic host migration, host leave, host chose at random
     private Lobby hostLobby;
@@ -36,19 +38,22 @@ public class LobbyManager : MonoBehaviour
     
     private const string KEY_RELAY_JOIN_CODE = "RelayJoinCode";
 
-    public string playerName;
-
     public event EventHandler OnCreateLobbyStarted;
     public event EventHandler OnCreateLobbyFailed;
     public event EventHandler OnJoinStarted;
     public event EventHandler OnQuickJoinFailed;
     public event EventHandler OnJoinFailed;
-    public event EventHandler OnJoinPassword;
+    public event EventHandler OnJoinFailedPassword;
 
     public event EventHandler<OnLobbyListChangedEventArgs> OnLobbyListChanged;
     public class OnLobbyListChangedEventArgs : EventArgs
     {
         public List<Lobby> lobbyList;
+    }
+
+    public class LobbyErrorMessageEventArgs : EventArgs
+    {
+        public LobbyServiceException e;
     }
 
     private void Awake()
@@ -64,49 +69,23 @@ public class LobbyManager : MonoBehaviour
         
         DontDestroyOnLoad(gameObject);
         
-        playerName = null;
+        
         password = null;
         lobbyCode = null;
 
-        OnJoinPassword += (object sender, EventArgs e) => { password = null; };
+        
     }
 
-    
-    private async void InitializeUnityAuthentication()
+    private void Start()
     {
-        if(UnityServices.State != ServicesInitializationState.Initialized)
-        {
-            InitializationOptions initializationOptions = new InitializationOptions();
-            initializationOptions.SetProfile(UnityEngine.Random.Range(0, 10000).ToString());
-
-            await UnityServices.InitializeAsync(initializationOptions);
-
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
-        }
+        OnJoinFailedPassword += (object sender, EventArgs e) => { password = null; };
     }
-    
-    public async void Authenticate(string playerName)
-    {
-        this.playerName = playerName;
-        InitializationOptions InitializationOptions = new InitializationOptions();
-        InitializationOptions.SetProfile(playerName);
 
-        await UnityServices.InitializeAsync(InitializationOptions);
-
-        AuthenticationService.Instance.SignedIn += () =>
-        {
-            //do nothing
-            Debug.Log("Signed in! " + AuthenticationService.Instance.PlayerId);
-
-            RefreshLobbyList();
-        };
-
-        await AuthenticationService.Instance.SignInAnonymouslyAsync();
-    }
     private void Update()
     {
         HandleLobbyHeartbeat();
         HandleLobbyPollForUpdates();
+        HandlePeriodicListLobbies();
     }
 
     //use this function to run different profiles on the same pc
@@ -215,10 +194,20 @@ public class LobbyManager : MonoBehaviour
     [Command]
     public async void CreateLobby(string lobbyName, bool isPrivate, string password)
     {
+        OnCreateLobbyStarted?.Invoke(this, EventArgs.Empty);
         try
         {
             this.lobbyName = lobbyName;
-            this.password = "password" + password;
+            if (password != null)
+            {
+                //if its private, it will have a password, added "password" to remove 8 character limitation
+                this.password = "password" + password;
+            }
+            else
+            {
+                //public lobby has null/no password
+                this.password = password;
+            }
             this.isPrivate = isPrivate;
             int maxPlayers = 8;
 
@@ -226,8 +215,8 @@ public class LobbyManager : MonoBehaviour
             CreateLobbyOptions createLobbyOptions = new CreateLobbyOptions
             {
                 IsPrivate = isPrivate,
-                Player = GetPlayer(),
-                Password = "password" + password,
+                Player = AuthenticationManager.Instance.GetPlayer(),
+                Password = this.password,
                 //assignning custom data to the lobby
                 Data = new Dictionary<string, DataObject>
                 {
@@ -265,6 +254,7 @@ public class LobbyManager : MonoBehaviour
         }
         catch (LobbyServiceException e)
         {
+            OnCreateLobbyFailed?.Invoke(this, EventArgs.Empty);
             Debug.Log(e);
         }
 
@@ -298,7 +288,15 @@ public class LobbyManager : MonoBehaviour
 
             };
             //
-            QueryResponse queryResponse = await Lobbies.Instance.QueryLobbiesAsync();
+
+            QueryResponse queryResponse = await Lobbies.Instance.QueryLobbiesAsync(queryLobbiesOptions);
+
+
+
+            OnLobbyListChanged?.Invoke(this, new OnLobbyListChangedEventArgs
+            {
+                lobbyList = queryResponse.Results
+            });
 
             Debug.Log("Lobbies found:" + queryResponse.Results.Count);
 
@@ -318,12 +316,13 @@ public class LobbyManager : MonoBehaviour
 
     public async void JoinLobbyByCode(string newLobbyCode)
     {
+        OnJoinStarted?.Invoke(this, EventArgs.Empty);
         try
         {
             lobbyCode = newLobbyCode;
             JoinLobbyByCodeOptions joinLobbyByCodeOptions = new JoinLobbyByCodeOptions
             {
-                Player = GetPlayer(),
+                Player = AuthenticationManager.Instance.GetPlayer(),
                 //input Password
                 Password = "password" + password
             };
@@ -348,10 +347,12 @@ public class LobbyManager : MonoBehaviour
         }
         catch (LobbyServiceException e)
         {
+            
+            OnJoinFailed?.Invoke(this, EventArgs.Empty);
             //try to join, if needs password, then pop out password ui, enter password, and try again
             if (e.Reason == LobbyExceptionReason.IncorrectPassword)
             {
-                OnJoinPassword?.Invoke(this, EventArgs.Empty);
+                OnJoinFailedPassword?.Invoke(this, EventArgs.Empty);
             }
             Debug.Log(e);
         }
@@ -376,10 +377,11 @@ public class LobbyManager : MonoBehaviour
         }
         catch(LobbyServiceException e)
         {
+            OnQuickJoinFailed?.Invoke(this, EventArgs.Empty);
             //try to join, if needs password, then pop out password ui, enter password, and try again
-            if (e.Reason == LobbyExceptionReason.IncorrectPassword)
+            if (e.Reason == LobbyExceptionReason.NoOpenLobbies)
             {
-                OnJoinPassword?.Invoke(this, EventArgs.Empty);
+                
             }
             Debug.Log(e);
         }
@@ -388,11 +390,12 @@ public class LobbyManager : MonoBehaviour
     //this not really in use
     public async void JoinLobbyById(string lobbyId)
     {
+        OnJoinStarted?.Invoke(this, EventArgs.Empty);
         try
         {
             JoinLobbyByIdOptions joinLobbyByIdOptions = new JoinLobbyByIdOptions
             {
-                Player = GetPlayer(),
+                Player = AuthenticationManager.Instance.GetPlayer(),
                 //input Password
                 Password = "password" + password
             };
@@ -417,30 +420,17 @@ public class LobbyManager : MonoBehaviour
         }
         catch (LobbyServiceException e)
         {
+            OnJoinFailed?.Invoke(this, EventArgs.Empty);
             //try to join, if needs password, then pop out password ui, enter password, and try again
             if (e.Reason == LobbyExceptionReason.IncorrectPassword)
             {
-                OnJoinPassword?.Invoke(this, EventArgs.Empty);
+                OnJoinFailedPassword?.Invoke(this, EventArgs.Empty);
             }
             Debug.Log(e);
         }
 
     }
 
-    private Player GetPlayer()
-    {
-        return new Player
-        {
-            //Id = AuthenticationService.Instance.PlayerIdId,
-
-
-            //use the dictionary to store whatever data u want, player characters, loadouts, etc.
-            Data = new Dictionary<string, PlayerDataObject>
-                    {
-                        {"PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName)}
-                    }
-        };
-    }
 
     [Command]
     private void PrintPlayers()
@@ -484,16 +474,17 @@ public class LobbyManager : MonoBehaviour
         
     }
 
+    //whats the use of this?
     private async void UpdatePlayerName(string newPlayerName)
     {
         try
         {
-            playerName = newPlayerName;
+            AuthenticationManager.Instance.playerName = newPlayerName;
             await LobbyService.Instance.UpdatePlayerAsync(joinedLobby.Id, AuthenticationService.Instance.PlayerId, new UpdatePlayerOptions
             {
                 Data = new Dictionary<string, PlayerDataObject>
             {
-                {"PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName)}
+                {"PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, AuthenticationManager.Instance.playerName)}
             }
             });
         }
@@ -504,7 +495,7 @@ public class LobbyManager : MonoBehaviour
         
     }
 
-    private async void LeaveLobby()
+    public async void LeaveLobby()
     {
         try
         {

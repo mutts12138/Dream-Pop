@@ -59,11 +59,6 @@ public class GameManager : NetworkBehaviour
         gameState = new NetworkVariable<GameStates>(GameStates.waitingToStart, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         if (!IsServer) return;
-
-        gameState.OnValueChanged += (GameStates previousValue, GameStates newValue) =>
-        {
-            GameState_OnValueChanged(previousValue, newValue);
-        };
         //gameObject.GetComponent<NetworkObject>().Spawn(true);
 
 
@@ -74,6 +69,16 @@ public class GameManager : NetworkBehaviour
 
     }
 
+
+    private void Start()
+    {
+        if (!IsServer) return;
+
+        gameState.OnValueChanged += (GameStates previousValue, GameStates newValue) =>
+        {
+            GameState_OnValueChanged(previousValue, newValue);
+        };
+    }
     public override void OnNetworkSpawn()
     {
         //initialize players

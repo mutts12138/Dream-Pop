@@ -13,7 +13,7 @@ public class PasswordUI : MonoBehaviour
     [SerializeField] LobbyUI lobbyUI;
     private void Awake()
     {
-        LobbyManager.Instance.OnJoinPassword += (object sender, EventArgs e) => { Show(); };
+        
 
         passwordInputField.onEndEdit.AddListener((string newPassword) =>
         {
@@ -34,8 +34,15 @@ public class PasswordUI : MonoBehaviour
             Hide();
         });
 
+        
+    }
+
+    private void Start()
+    {
+        LobbyManager.Instance.OnJoinFailedPassword += (object sender, EventArgs e) => { Show(); };
         Hide();
     }
+
     public void Show()
     {
         passwordInputField.text = null;

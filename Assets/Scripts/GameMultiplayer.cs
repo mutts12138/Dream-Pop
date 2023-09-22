@@ -131,6 +131,8 @@ public class GameMultiplayer : NetworkBehaviour
         //SceneLoader.LoadNetwork(SceneLoader.Scene.WaitingRoom);
     }
 
+    
+
     public void StartServer()
     {
         NetworkManager.Singleton.StartServer();
@@ -138,19 +140,20 @@ public class GameMultiplayer : NetworkBehaviour
 
     private void OnNetworkManager_OnClientConnectedCallBack(ulong clientID)
     {
+        OnTryingToJoinGame?.Invoke(this,EventArgs.Empty);
+
         if (!IsServer) return;
         AddNewPlayerToPlayerConnectedList(clientID);
     }
 
     private void OnNetworkManager_OnClientDisconnectedCallBack(ulong clientID)
     {
-        if (!IsServer) return;
-        RemovePlayerFromPlayerConnectedList(clientID);
+        OnFailedToJoinGame?.Invoke(this, EventArgs.Empty);
 
-        if (!IsServer)
-        {
-            Debug.Log($"Approval Declined Reason: {NetworkManager.Singleton.DisconnectReason}");
-        }
+        if (!IsServer) return;
+        RemovePlayerFromPlayerConnectedList(clientID); 
+        Debug.Log($"Approval Declined Reason: {NetworkManager.Singleton.DisconnectReason}");
+        
     }
 
 

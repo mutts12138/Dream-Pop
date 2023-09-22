@@ -1,6 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Services.Authentication;
+using Unity.Services.Core;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,40 +12,47 @@ public class AuthenticationUI : MonoBehaviour
     [SerializeField] private TMP_InputField playerNameInputField;
     [SerializeField] private Button authenticateBTN;
     [SerializeField] private Button backBTN;
-    [SerializeField] private LobbyUI lobbyUI;
+    
     private void Awake()
     {
         
 
         playerNameInputField.onEndEdit.AddListener((string newPlayerName) =>
         {
-            LobbyManager.Instance.playerName = newPlayerName;
+            AuthenticationManager.Instance.playerName = newPlayerName;
         });
 
         authenticateBTN.onClick.AddListener(() =>
         {
-            if (LobbyManager.Instance.playerName != null)
-            {
-                LobbyManager.Instance.Authenticate(LobbyManager.Instance.playerName);
-                lobbyUI.Show();
-                Hide();
-            }
-            else
-            {
-                Debug.Log("playername is null");
-            }
+            AuthenticationManager.Instance.Authenticate(AuthenticationManager.Instance.playerName);
+
         });
 
         backBTN.onClick.AddListener(() =>
         {
-            SceneLoader.Load(SceneLoader.Scene.MainMenu);
+            Hide();
         });
 
-        if (LobbyManager.Instance.playerName != null)
+        Hide();
+    }
+    private void Start()
+    {
+        AuthenticationManager.Instance.OnAuthenticationSuccess += (object sender, EventArgs e) =>
+        {
+            SceneLoader.Load(SceneLoader.Scene.Lobby);
+        };
+
+        if (UnityServices.State == ServicesInitializationState.Uninitialized)
+        {
+            Show();
+        }
+        else
         {
             Hide();
         }
     }
+
+    
 
     public void Show()
     {

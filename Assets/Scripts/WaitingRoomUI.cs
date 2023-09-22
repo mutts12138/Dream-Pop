@@ -45,6 +45,15 @@ public class WaitingRoomUI : MonoBehaviour
         {
             SetPlayerTeamNumberServerRpc(2);
         });
+
+        /*
+        leaveBTN.onClick.AddListener(() =>
+        {
+            LobbyManager.Instance.LeaveLobby();
+            NetworkManager.Singleton.Shutdown();
+            SceneLoader.Load(SceneLoader.Scene.Lobby);
+        });
+        */
     }
 
     private void Start()
