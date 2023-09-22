@@ -8,7 +8,7 @@ using Unity.VisualScripting;
 public class Camera_followPlayer : MonoBehaviour
 {
     // Start is called before the first frame update
-    [SerializeField] Player player;
+    [SerializeField] PlayerCharacter player;
     [SerializeField] Vector3 camIniPos;
 
     private CinemachineVirtualCamera vCam;

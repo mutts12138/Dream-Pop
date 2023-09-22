@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8555143490015331051}
   - component: {fileID: 2154755564200400576}
   m_Layer: 0
-  m_Name: MapDataManager
+  m_Name: MapData
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -45,3 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnPoints: []
+  globalGravityAcc: 0
+  globalGravityMaxSpeed: 0
+  roundTime: 0
+  gameMode: {fileID: 0}

@@ -6,8 +6,8 @@ using UnityEngine.UIElements;
 
 public class Block : NetworkBehaviour, Ipoppable
 {
-
-    [SerializeField] private bool canPop = true;
+    [SerializeField] private bool canBeDestroyed;
+    private bool isPopped = false;
     private float gravityScale = -10f;
     private void Awake()
     {
@@ -43,7 +43,9 @@ public class Block : NetworkBehaviour, Ipoppable
     }
     public  void Pop()
     {
-        SetIsPopped(false);
+        SetIsPopped(true);
+
+        if(!canBeDestroyed) return;
         gameObject.GetComponent<NetworkObject>().Despawn();
         Destroy(gameObject);
         
@@ -51,11 +53,11 @@ public class Block : NetworkBehaviour, Ipoppable
 
     public bool GetIsPopped()
     {
-        return canPop;
+        return isPopped;
     }
 
-    public void SetIsPopped(bool poppable)
+    public void SetIsPopped(bool newIsPopped)
     {
-        canPop = poppable;
+        isPopped = newIsPopped;
     }
 }

@@ -10,25 +10,38 @@ using UnityEngine.Experimental.GlobalIllumination;
 using UnityEngine.UIElements;
 
 
-public class Player : NetworkBehaviour
+public class PlayerCharacter : NetworkBehaviour
 {
+    //event
+    public event EventHandler<CharacterBaseStatLevelChangeEventArgs> onCharacterBaseStatLevelChange;
+    public event EventHandler onEliminated;
+
+    public class CharacterBaseStatLevelChangeEventArgs : EventArgs
+    {
+        public int newMoveSpeedLevel;
+        public int newBubblePowerLevel;
+        public int newBubbleCountLevel;
+    }
+
+
+
+
     //underscore the private variables.
     private GameInput gameInput;
     [SerializeField] private DreamBubble dreamBubble;
 
     //team
 
-    private NetworkVariable<ulong> ownerClientID;
+    public NetworkVariable<ulong> ownerClientID { get; private set; }
+    public NetworkVariable<int> teamNumber { get; private set; }
 
-    private NetworkVariable<int> teamNumber;
-    
 
-    
+
 
     //player stats
     //const
     private const float playerRadius = 0.5f;
-    private const float playerHeight = 3f;
+    private const float playerHeight = 2.5f;
     private const float rotateSpeed = 15f;
     private const float jumpAcc = 20f;
 
@@ -39,10 +52,15 @@ public class Player : NetworkBehaviour
     private int useAbilityDisableStack;
     private int useItemDisableStack;
 
-    private bool isEliminated;
-    private bool canRespawn;
+    private int invincibleStack;
+
+    public NetworkVariable<bool> isAsleep { get; private set; }
+    public NetworkVariable<bool> isEliminated { get; private set; }
 
 
+
+
+    private Vector3 spawnPosition;
 
     
     private float baseMoveSpeed;
@@ -68,11 +86,15 @@ public class Player : NetworkBehaviour
     private int dreamFragCount;
     private int maxDreamFragCount;
 
+    //movement collision detection layermask
+    LayerMask movementLayerMaskIgnore;
+    
+
     //gravity numbers get from game manager
     private float gravityAcc;
     private float gravityMaxSpeed;
 
-    
+
 
     //player state
     //normal: 0, asleep: 1, death: 2
@@ -82,35 +104,19 @@ public class Player : NetworkBehaviour
         asleep,
         death
     };*/
-
+    private string[] layersList;
     private NetworkVariable<int> currentLayer;
 
     //not yet implemented
-    private NetworkVariable<bool> playerColliderEnabled = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    //private NetworkVariable<bool> playerColliderEnabled = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     private float verticalVelocity = 0f;
-    private bool isRunning = false;
-    private bool isGrounded = true;
 
 
-    const float asleepTimeBase = 6f;
-    private float asleepTimer = asleepTimeBase;
+    //player state for player animator
+    public bool isMoving { get; private set; }
+    public bool isGrounded { get; private set; }
 
-    const float respawnTimerBase = 10f;
-    private float respawnTimer = respawnTimerBase;
-
-    private string[] layers;
-
-    //event
-    
-    public event EventHandler<CharacterBaseStatLevelChangeEventArgs> onCharacterBaseStatLevelChange;
-
-    public class CharacterBaseStatLevelChangeEventArgs : EventArgs
-    {
-        public int newMoveSpeedLevel;
-        public int newBubblePowerLevel;
-        public int newBubbleCountLevel;
-    }
 
 
     private void Awake()
@@ -118,13 +124,22 @@ public class Player : NetworkBehaviour
         ownerClientID = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         teamNumber = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+        isAsleep = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        isEliminated = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
         //currentPlayerState = new NetworkVariable<PlayerStates>(PlayerStates.normal, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         currentLayer = new NetworkVariable<int>(3, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+
+        movementLayerMaskIgnore = LayerMask.GetMask("pickUp");
+        movementLayerMaskIgnore += LayerMask.GetMask("eliminated");
     }
     public override void OnNetworkSpawn()
     {
+        
+
         //Get layermask list string name
-        layers = Enumerable.Range(0, 31).Select(index => LayerMask.LayerToName(index)).Where(l => !string.IsNullOrEmpty(l)).ToArray();
+        layersList = Enumerable.Range(0, 31).Select(index => LayerMask.LayerToName(index)).Where(l => !string.IsNullOrEmpty(l)).ToArray();
 
 
         //event subscribe
@@ -133,6 +148,7 @@ public class Player : NetworkBehaviour
         //if owner
         if (!IsOwner) return;
 
+        //ownerClientID.Value = NetworkManager.Singleton.LocalClientId;
         //connect game manager
 
         //connect input 
@@ -150,9 +166,9 @@ public class Player : NetworkBehaviour
         //currentPlayerState.OnValueChanged += (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
 
 
-        if(PlayerDataManager.Instance != null)
+        if(GameMultiplayer.Instance != null)
         {
-            teamNumber.OnValueChanged += (int previousTeamNumber, int newTeamNumber) => { PlayerDataManager.Instance.SetPlayerTeamNumberServerRpc(ownerClientID.Value, newTeamNumber); };
+            teamNumber.OnValueChanged += (int previousTeamNumber, int newTeamNumber) => { GameMultiplayer.Instance.SetPlayerTeamNumberServerRpc(ownerClientID.Value, newTeamNumber); };
         }
         
 
@@ -177,7 +193,7 @@ public class Player : NetworkBehaviour
     private void SetInitialStats()
     {
         //set character and abilities
-        baseMoveSpeed = 10f;
+        baseMoveSpeed = 5f;
         //set initial max stats : movementspeed,bubble count, bubble power
         maxBubbleCountLevel = 10;
         maxBubblePowerLevel = 10;
@@ -187,10 +203,10 @@ public class Player : NetworkBehaviour
 
 
         //gravity
-        if(MapDataManager.Instance != null)
+        if(MapData.Instance != null)
         {
-            gravityAcc = MapDataManager.Instance.GetGlobalGravityAcc();
-            gravityMaxSpeed = MapDataManager.Instance.GetGlobalGravityMaxSpeed();
+            gravityAcc = MapData.Instance.GetGlobalGravityAcc();
+            gravityMaxSpeed = MapData.Instance.GetGlobalGravityMaxSpeed();
         }
         else
         {
@@ -243,7 +259,13 @@ public class Player : NetworkBehaviour
     private void HandleMovement()
     {
         //for detecting collision
+        //7 == pickup
+        //int layerNumber = 7;
         
+        
+        //layerMaskIgnore = 1 << layerNumber;
+
+
         float moveMaxDistance = baseMoveSpeed * currentMoveSpeedLevel * Time.deltaTime;
 
         //get movement input
@@ -268,13 +290,13 @@ public class Player : NetworkBehaviour
         float capsuleRadius = playerRadius;
 
         //detect collision
-        bool canMove = !Physics.CapsuleCast(capsuleBotPoint, capsuleTopPoint, capsuleRadius, moveDir, moveMaxDistance);
+        bool canMove = !Physics.CapsuleCast(capsuleBotPoint, capsuleTopPoint, capsuleRadius, moveDir, moveMaxDistance, ~movementLayerMaskIgnore);
 
         if (!canMove)
         {
             //test x only
             Vector3 moveDirX = new Vector3(moveDir.x, 0, 0);
-            canMove = !Physics.CapsuleCast(capsuleBotPoint, capsuleTopPoint, capsuleRadius, moveDirX, moveMaxDistance);
+            canMove = !Physics.CapsuleCast(capsuleBotPoint, capsuleTopPoint, capsuleRadius, moveDirX, moveMaxDistance, ~movementLayerMaskIgnore);
             if (canMove)
             {
                 moveDir = moveDirX;
@@ -283,7 +305,7 @@ public class Player : NetworkBehaviour
             {
                 //test z only
                 Vector3 moveDirZ = new Vector3(0, 0, moveDir.z);
-                canMove = !Physics.CapsuleCast(capsuleBotPoint, capsuleTopPoint, capsuleRadius, moveDirZ, moveMaxDistance);
+                canMove = !Physics.CapsuleCast(capsuleBotPoint, capsuleTopPoint, capsuleRadius, moveDirZ, moveMaxDistance, ~movementLayerMaskIgnore);
                 if (canMove)
                 {
                     moveDir = moveDirZ;
@@ -299,7 +321,7 @@ public class Player : NetworkBehaviour
         }
 
         //set animation state
-        isRunning = moveDir != Vector3.zero;
+        isMoving = moveDir != Vector3.zero;
 
 
     }
@@ -352,14 +374,8 @@ public class Player : NetworkBehaviour
 
         if(Physics.OverlapSphere(dreamBubbleLocation, 0.5f, layerMask).Length <= 0)
         {
-            DreamBubble dreamBubbleTransform = Instantiate(dreamBubble);
-            dreamBubbleTransform.transform.position = dreamBubbleLocation;
-            dreamBubbleTransform.GetComponent<NetworkObject>().Spawn(true);
-
-            //Debug.Log(this);
-
-            dreamBubbleTransform.SetPlayer(gameObject.GetComponent<Player>());
-            dreamBubbleTransform.SetPopPowerDistance(bubblePowerLevel);
+            
+            //GameMultiplayer.Instance.SpawnDreamBubbleObject();
 
             ChangeBubbleCountClientRpc(1);
         }
@@ -392,9 +408,11 @@ public class Player : NetworkBehaviour
 
     private void CheckIsGrounded()
     {
+        
+
         if (!(verticalVelocity > 0))
         {
-            if (!Physics.CapsuleCast(new Vector3(transform.position.x, transform.position.y + playerRadius + 0.01f, transform.position.z), transform.position + Vector3.up * playerHeight, playerRadius, Vector3.down, out RaycastHit raycastHit, 0.50f))
+            if (!Physics.CapsuleCast(new Vector3(transform.position.x, transform.position.y + playerRadius + 0.01f, transform.position.z), transform.position + Vector3.up * playerHeight, playerRadius, Vector3.down, out RaycastHit raycastHit, 0.50f, ~movementLayerMaskIgnore))
             {
                 isGrounded = false;
 
@@ -436,29 +454,33 @@ public class Player : NetworkBehaviour
     [ServerRpc]
     public void CallChangeCharacterBaseStatLevelsServerRpc(int deltaMoveSpeedLevel, int deltaBubbleCountLevel, int deltaBubblePowerLevel)
     {
-        ChangeCharacterBaseStatLevelsClientRpc(deltaMoveSpeedLevel, deltaBubbleCountLevel, deltaBubblePowerLevel);
+        CallChangeCharacterBaseStatLevelsClientRpc(deltaMoveSpeedLevel, deltaBubbleCountLevel, deltaBubblePowerLevel);
     }
 
     [ClientRpc]
-    public void ChangeCharacterBaseStatLevelsClientRpc(int deltaMoveSpeedLevel, int deltaBubbleCountLevel, int deltaBubblePowerLevel)
+    public void CallChangeCharacterBaseStatLevelsClientRpc(int deltaMoveSpeedLevel, int deltaBubbleCountLevel, int deltaBubblePowerLevel)
+    {
+        ChangeCharacterBaseStatLevels(deltaMoveSpeedLevel, deltaBubbleCountLevel, deltaBubblePowerLevel);
+    }
+
+    public void ChangeCharacterBaseStatLevels(int deltaMoveSpeedLevel, int deltaBubbleCountLevel, int deltaBubblePowerLevel)
     {
         if (!IsOwner) return;
 
         currentMoveSpeedLevel += deltaMoveSpeedLevel;
-        Mathf.Clamp(currentMoveSpeedLevel,0,maxMoveSpeedLevel);
+        Mathf.Clamp(currentMoveSpeedLevel, 0, maxMoveSpeedLevel);
 
         currentBubbleCountLevel += deltaBubbleCountLevel;
         Mathf.Clamp(currentBubbleCountLevel, 0, maxBubbleCountLevel);
-        
+
         currentBubblePowerLevel += deltaBubblePowerLevel;
-        Mathf.Clamp(currentBubblePowerLevel, 0, maxBubblePowerLevel); 
+        Mathf.Clamp(currentBubblePowerLevel, 0, maxBubblePowerLevel);
 
         //updates UI
-        onCharacterBaseStatLevelChange?.Invoke(this, new CharacterBaseStatLevelChangeEventArgs {newBubbleCountLevel = currentBubbleCountLevel, newMoveSpeedLevel = currentMoveSpeedLevel, newBubblePowerLevel = currentBubblePowerLevel});
+        onCharacterBaseStatLevelChange?.Invoke(this, new CharacterBaseStatLevelChangeEventArgs { newBubbleCountLevel = currentBubbleCountLevel, newMoveSpeedLevel = currentMoveSpeedLevel, newBubblePowerLevel = currentBubblePowerLevel });
     }
 
-
-
+    
 
     /*
     private void HandleAsleep()
@@ -580,11 +602,16 @@ public class Player : NetworkBehaviour
     }
     */
 
+    public void SetCurrentLayer(int newLayer)
+    {
+        currentLayer.Value = newLayer;
+    }
 
+    //subscribed to currentlayer.valuechange
     public void ChangeLayer(int layerNumber)
     {
 
-        gameObject.layer = LayerMask.NameToLayer(layers[layerNumber]);
+        gameObject.layer = LayerMask.NameToLayer(layersList[layerNumber]);
         Debug.Log("playerObject on layer" + gameObject.layer);
     }
 
@@ -595,38 +622,27 @@ public class Player : NetworkBehaviour
 
 
     //get and set
-    public ulong GetClientId()
-    {
-        return ownerClientID.Value;
-    }
-    public void SetClientId(ulong clientID)
+
+    public void SetOwnerClientId(ulong clientID)
     {
         this.ownerClientID.Value = clientID;
     }
-    public int GetTeamNumber()
-    {
 
-        return teamNumber.Value;
-        
-    }
 
     [ServerRpc]
     public void SetTeamNumberServerRpc(int newTeamNumber)
     {
         teamNumber.Value = newTeamNumber;
-        Debug.Log(GetTeamNumber());
+        //Debug.Log(GetTeamNumber());
     }
 
     public void SetTeamNumber(int newTeamNumber)
     {
         teamNumber.Value = newTeamNumber;
-        Debug.Log(GetTeamNumber());
+        //Debug.Log(GetTeamNumber());
     }
 
-    public bool GetIsRunning()
-    {
-        return isRunning;
-    }
+
 
     //player status get and set
     /*
@@ -659,15 +675,16 @@ public class Player : NetworkBehaviour
         return useItemDisableStack;
     }
 
-    private bool GetIsEliminated()
+    public int GetInvincibleStack()
     {
-        return isEliminated;
+        return invincibleStack;
     }
 
-    private bool GetCanRespawn()
+    private bool GetIsEliminated()
     {
-        return canRespawn;
+        return isEliminated.Value;
     }
+
     public void AddToMoveDisableStack(int deltaValue)
     {
         moveDisableStack += deltaValue;
@@ -684,14 +701,26 @@ public class Player : NetworkBehaviour
     {
         useItemDisableStack += deltaValue;
     }
+
+    public void AddToInvincibleStack(int deltaValue)
+    {
+        invincibleStack += deltaValue;
+    }
+
+    public void SetIsAsleep(bool deltaValue)
+    {
+        isAsleep.Value = deltaValue;
+    }
+
     public void SetIsEliminated(bool deltaValue)
     {
-        isEliminated = deltaValue;
+        isEliminated.Value = deltaValue;
+        if(deltaValue )
+        {
+            onEliminated?.Invoke(this, EventArgs.Empty);
+        }
     }
-    public void SetCanRespawn(bool deltaValue)
-    {
-        canRespawn = deltaValue;
-    }
+    
     /*
     public PlayerStates GetCurrentPlayerState()
     {
@@ -720,5 +749,5 @@ public class Player : NetworkBehaviour
         transform.position = newPosition;
     }
      
-
+   
 }

@@ -47,12 +47,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerPreFab: {fileID: 8745314787293019194, guid: ff9ee4ca2a833c84ebaa36134727c3e8,
     type: 3}
-  playerUI: {fileID: 1054284033798534812, guid: 00c9c846aecd3214bbd401198b72a01a,
+  playerUIPreFab: {fileID: 1054284033798534812, guid: 00c9c846aecd3214bbd401198b72a01a,
     type: 3}
-  globalGravityAcc: -100
-  globalGravityMaxSpeed: -10
-  spawnPoints:
-  - {fileID: 0}
 --- !u!114 &5748913638477614775
 MonoBehaviour:
   m_ObjectHideFlags: 0
