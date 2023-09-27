@@ -11,6 +11,7 @@ using UnityEngine.UI;
 public class WaitingRoomUI : MonoBehaviour
 {
     
+
     [SerializeField] private Button StartGameBTN;
 
     [SerializeField] private TextMeshProUGUI player1Text;
@@ -25,6 +26,7 @@ public class WaitingRoomUI : MonoBehaviour
     [SerializeField] private Button team1BTN;
     [SerializeField] private Button team2BTN;
 
+    [SerializeField] private Button leaveBTN;
     // Start is called before the first frame update
     void Awake()
     {
@@ -46,20 +48,20 @@ public class WaitingRoomUI : MonoBehaviour
             SetPlayerTeamNumberServerRpc(2);
         });
 
-        /*
+        
         leaveBTN.onClick.AddListener(() =>
         {
-            LobbyManager.Instance.LeaveLobby();
+            ServerManager.Instance.IsVoluntaryDisconnect = true;
             NetworkManager.Singleton.Shutdown();
-            SceneLoader.Load(SceneLoader.Scene.Lobby);
+            //shut down network manager auto trigger return to lobby
         });
-        */
+        
     }
 
     private void Start()
     {
         //subscribe lobbylist change delegate
-        GameMultiplayer.Instance.GetRoomPlayerDataNetworkList().OnListChanged += (NetworkListEvent<PlayerData> changeEvent) => { UpdatePlayerLobby(); };
+        GameMultiplayer.Instance.GetRoomPlayerDataNetworkList().OnListChanged += (NetworkListEvent<PlayerData> changeEvent) => { UpdateDisplayPlayers(); };
     }
 
     private void OnDisable()
@@ -68,10 +70,11 @@ public class WaitingRoomUI : MonoBehaviour
         StartGameBTN.onClick.RemoveAllListeners();
         team1BTN.onClick.RemoveAllListeners();
         team2BTN.onClick.RemoveAllListeners();
-        GameMultiplayer.Instance.GetRoomPlayerDataNetworkList().OnListChanged -= (NetworkListEvent<PlayerData> changeEvent) => { UpdatePlayerLobby(); };
+        leaveBTN.onClick.RemoveAllListeners();
+        GameMultiplayer.Instance.GetRoomPlayerDataNetworkList().OnListChanged -= (NetworkListEvent<PlayerData> changeEvent) => { UpdateDisplayPlayers(); };
     }
 
-    private void UpdatePlayerLobby()
+    private void UpdateDisplayPlayers()
     {
         int index = 0;
         foreach (PlayerData player in GameMultiplayer.Instance.GetRoomPlayerDataNetworkList())
@@ -133,4 +136,6 @@ public class WaitingRoomUI : MonoBehaviour
     {
         gameObject.SetActive(false);
     }
+
+    
 }

@@ -31,7 +31,7 @@ public class NetworkManagerUI : MonoBehaviour
 
         hostBTN.onClick.AddListener(() =>
         {
-            GameMultiplayer.Instance.StartHost();
+            ServerManager.Instance.StartHost();
 
             WaitingRoomManager lobbyManager = Instantiate(new WaitingRoomManager());
             lobbyManager.GetComponent<NetworkObject>().Spawn(true);
@@ -41,10 +41,11 @@ public class NetworkManagerUI : MonoBehaviour
 
         });
 
+        /*
         serverBTN.onClick.AddListener(() =>
         {
             GameMultiplayer.Instance.StartServer();
-        });
+        });*/
 
         clientBTN.onClick.AddListener(() =>
         {

@@ -160,8 +160,6 @@ public class PlayerCharacter : NetworkBehaviour
             //gameInput.OnJump += GameInput_OnJump;
         }
 
-
-
         //event subscribe
         //currentPlayerState.OnValueChanged += (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
 
@@ -171,10 +169,6 @@ public class PlayerCharacter : NetworkBehaviour
             teamNumber.OnValueChanged += (int previousTeamNumber, int newTeamNumber) => { GameMultiplayer.Instance.SetPlayerTeamNumberServerRpc(ownerClientID.Value, newTeamNumber); };
         }
         
-
-
-
-
         //set character and Stats
         SetInitialStats();
     }
@@ -345,7 +339,7 @@ public class PlayerCharacter : NetworkBehaviour
     //place bubble
     private void GameInput_OnPlaceBubble(object sender, System.EventArgs e)
     {
-        //Debug.Log(bubbleCount);
+        //Debug.Log(currentBubbleCount);
         //Debug.Log(currentBubbleCountLevel);
         //check to see if player is grounded
         //check to see if player has reached bubbleCountLimit
@@ -376,7 +370,7 @@ public class PlayerCharacter : NetworkBehaviour
         {
             
             //GameMultiplayer.Instance.SpawnDreamBubbleObject();
-
+            SpawnDreamBubbleObject();
             ChangeBubbleCountClientRpc(1);
         }
 
@@ -384,6 +378,19 @@ public class PlayerCharacter : NetworkBehaviour
         /*dreamBubbleTransform = Instantiate(dreamBubble);
         dreamBubbleTransform.transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
         */
+    }
+
+    private void SpawnDreamBubbleObject()
+    {
+        DreamBubble dreamBubbleTransform = Instantiate(dreamBubble);
+        dreamBubbleTransform.transform.position = transform.position;
+        dreamBubbleTransform.GetComponent<NetworkObject>().Spawn(true);
+
+        //Debug.Log(this);
+        
+
+        dreamBubbleTransform.SetPlayer(this);
+        dreamBubbleTransform.SetPopPowerDistance(currentBubblePowerLevel);
     }
 
     [ClientRpc]

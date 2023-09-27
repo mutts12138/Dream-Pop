@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
+using QFSW.QC;
+
 public class SceneLoader : MonoBehaviour
 {
 
@@ -32,6 +34,20 @@ public class SceneLoader : MonoBehaviour
 
     private static Scene targetScene;
 
+
+    [Command]
+    public static void testLoad(int number)
+    {
+        if (number == 0)
+        {
+            SceneManager.LoadScene("MainMenu");
+        }
+        if (number == 1)
+        {
+            SceneManager.LoadScene("Lobby");
+        }
+    }
+    
     public static void Load(Scene targetScene)
     {
         SceneLoader.targetScene = targetScene;

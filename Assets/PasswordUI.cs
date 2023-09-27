@@ -7,19 +7,32 @@ using UnityEngine.UI;
 
 public class PasswordUI : MonoBehaviour
 {
+    public static PasswordUI Instance;
+
     [SerializeField] TMP_InputField passwordInputField;
     [SerializeField] Button submitBTN;
     [SerializeField] Button cancelBTN;
     [SerializeField] LobbyUI lobbyUI;
+
     private void Awake()
     {
-        
+        if (Instance != null)
+        {
+            Destroy(this);
+            return;
+        }
+        Instance = this;
 
+        
+    }
+
+    private void Start()
+    {
         passwordInputField.onEndEdit.AddListener((string newPassword) =>
         {
             LobbyManager.Instance.password = newPassword;
         });
-        
+
 
         submitBTN.onClick.AddListener(() =>
         {
@@ -34,12 +47,6 @@ public class PasswordUI : MonoBehaviour
             Hide();
         });
 
-        
-    }
-
-    private void Start()
-    {
-        LobbyManager.Instance.OnJoinFailedPassword += (object sender, EventArgs e) => { Show(); };
         Hide();
     }
 

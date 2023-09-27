@@ -20,6 +20,7 @@ public class GameManager : NetworkBehaviour
 
     private NetworkVariable<GameStates> gameState;
 
+
     public event EventHandler onGameEnded;
 
     private Dictionary<ulong, bool> playerReadyDictionary;

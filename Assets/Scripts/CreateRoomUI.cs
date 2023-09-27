@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using WebSocketSharp;
 
 public class CreateRoomUI : MonoBehaviour
 {
@@ -46,6 +47,7 @@ public class CreateRoomUI : MonoBehaviour
         createRoomButton.onClick.AddListener(() =>
         {
             LobbyManager.Instance.CreateLobby(LobbyManager.Instance.lobbyName, LobbyManager.Instance.isPrivate, LobbyManager.Instance.password);
+            Hide();
         });
 
         backButton.onClick.AddListener(() =>
