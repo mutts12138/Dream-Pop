@@ -16,9 +16,8 @@ public class AuthenticationManager : MonoBehaviour
     public event EventHandler OnAuthenticationSuccess;
     public event EventHandler OnAuthenticationFailed;
 
-    public bool isAuthenticated;
-
     public string playerName;
+    
 
     private void Awake()
     {
@@ -36,8 +35,7 @@ public class AuthenticationManager : MonoBehaviour
 
     void Start()
     {
-        playerName = null;
-        
+
     }
 
     // Update is called once per frame
@@ -81,6 +79,7 @@ public class AuthenticationManager : MonoBehaviour
             };
 
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
+
             OnAuthenticationSuccess?.Invoke(this, EventArgs.Empty);
         }
         catch (AuthenticationException e)
@@ -91,6 +90,7 @@ public class AuthenticationManager : MonoBehaviour
             if (e.ErrorCode == AuthenticationErrorCodes.ClientInvalidProfile)
             {
                 OnInvalidProfileName?.Invoke(this, EventArgs.Empty);
+                
                 return;
             }
 

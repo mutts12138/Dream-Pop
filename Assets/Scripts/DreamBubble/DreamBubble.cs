@@ -342,9 +342,10 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         Debug.Log("Restore bubblecount to: " + player.ownerClientID.Value);
         player.ChangeBubbleCountClientRpc(-1);
 
-        
+
 
         //disable instead of destroy
+        GetComponent<NetworkObject>().Despawn();
         Destroy(gameObject);
     }
 

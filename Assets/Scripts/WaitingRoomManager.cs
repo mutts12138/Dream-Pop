@@ -16,8 +16,7 @@ public class WaitingRoomManager : NetworkBehaviour
 
     //temp
     [SerializeField] private PlayerCharacter playerPreFab;
-    [SerializeField] private GameManager gameManagerPreFab;
-
+    
     
 
     private void Awake()
@@ -28,11 +27,16 @@ public class WaitingRoomManager : NetworkBehaviour
             Destroy(gameObject);
             return;
         }
-
-
         Instance = this;
+
         DontDestroyOnLoad(gameObject);
     }
+
+    private void Start()
+    {
+        
+    }
+
 
     // Update is called once per frame
     void Update()
@@ -42,23 +46,18 @@ public class WaitingRoomManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-
-        
-
         if (!IsServer) return;
-
-        //probably call/ handle it from playerdatamanager
-        NetworkManager.Singleton.OnClientConnectedCallback += (ulong clientID) => { OnNetworkManager_OnClientConnectedCallBack(clientID); };
-        NetworkManager.Singleton.OnClientDisconnectCallback += (ulong clientID) => { OnNetworkManager_OnClientDisconnectedCallBack(clientID); };
-
-        GameManager.Instance.onGameEnded += (object sender, EventArgs e) => { GameManager_OnGameEnded(sender, e); };
-
+        InitializeWaitingRoom();
         
+
+        /*
         NetworkManager.SceneManager.OnLoadEventCompleted += (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) =>
         {
             NetworkManager_OnLoadEventCompleted(sceneName, loadSceneMode, clientsCompleted, clientsTimedOut);
 
-        };
+        };*/
+
+
         //This is for returning back to lobby after a game is complete: shouldnt be placed here
         //NetworkManager.SceneManager.OnLoadComplete += (ulong clientId, string sceneName, LoadSceneMode loadSceneMode) => { };
         //NetworkManager.SceneManager.OnLoadEventCompleted += (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => { SpawnAllPlayerObjectsToLobby(clientsCompleted , clientsTimedOut); };
@@ -66,20 +65,29 @@ public class WaitingRoomManager : NetworkBehaviour
 
     }
 
-    private void OnDisable()
-    {
+    
 
-        if (!IsServer) return;
-        /*
-        if (NetworkManager.Singleton != null)
-        {
-            NetworkManager.Singleton.OnClientConnectedCallback -= (ulong clientID) => { AddPlayerToLobby(clientID); };
-            NetworkManager.Singleton.OnClientDisconnectCallback -= (ulong clientID) => { RemovePlayerFromLobby(clientID); };
-            
-        }
-        */
-        //NetworkManager.SceneManager.OnLoadEventCompleted -= (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => { SpawnAllPlayerObjectsToLobby(clientsCompleted, clientsTimedOut); };
+    private void InitializeWaitingRoom()
+    {
+        NetworkManager.Singleton.OnClientConnectedCallback += (ulong clientID) => { OnNetworkManager_OnClientConnectedCallBack(clientID); };
+        NetworkManager.Singleton.OnClientDisconnectCallback += (ulong clientID) => { OnNetworkManager_OnClientDisconnectedCallBack(clientID); };
+        SpawnAllPlayerObjectsToWaitingRoom();
     }
+
+    //calls when coming back to lobby after game ends
+    private void SpawnAllPlayerObjectsToWaitingRoom()
+    {
+        if (!IsServer) return;
+
+        Debug.Log("spawning all players.");
+
+        foreach (PlayerData playerData in GameMultiplayer.Instance.GetRoomPlayerDataNetworkList())
+        { 
+            SpawnPlayerObjectToWaitingRoom(playerData.clientID);
+        }
+        //client timedout show grey out icon
+    }
+
     private void OnNetworkManager_OnClientConnectedCallBack(ulong clientID)
     {
         AddPlayerToWaitingRoom(clientID);
@@ -90,37 +98,13 @@ public class WaitingRoomManager : NetworkBehaviour
         RemovePlayerFromWaitingRoom(clientID);
     }
 
+    
 
-
-    private void GameManager_OnGameEnded(object sender, EventArgs e)
-    {
-        ReturnToWaitingRoom();
-    }
-
-    private void NetworkManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
-    {
-        if (sceneName != "WaitingRoom") return;
-        InitializeWaitingRoom(clientsCompleted, clientsTimedOut);
-    }
-
-
-
-    private void InitializeWaitingRoom (List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
-    {
-        SpawnAllPlayerObjectsToWaitingRoom(clientsCompleted, clientsTimedOut);
-    }
-
-   
-
-
-
+    //this for UI purposes?
     private void AddPlayerToWaitingRoom(ulong clientID)
     {
-        //call it when a new client has connected
-        if (!IsServer) return;
         //spawn playerObject for clients
         SpawnPlayerObjectToWaitingRoom(clientID);
-
 
         //when maxed out set connection approval to false
     }
@@ -128,16 +112,6 @@ public class WaitingRoomManager : NetworkBehaviour
     private void RemovePlayerFromWaitingRoom(ulong clientID)
     {
         
-    }
-
-
-
-
-
-    [ServerRpc]
-    public void SpawnPlayerObjectToWaitingRoomServerRpc(ulong clientID)
-    {
-        SpawnPlayerObjectToWaitingRoom(clientID);
     }
 
     public void SpawnPlayerObjectToWaitingRoom(ulong clientID)
@@ -156,28 +130,7 @@ public class WaitingRoomManager : NetworkBehaviour
     }
 
 
-    //calls when coming back to lobby after game ends
-    private void SpawnAllPlayerObjectsToWaitingRoom(List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
-    {
-        if (!IsServer) return;
-
-        Debug.Log("spawning all players.");
-
-        foreach (ulong clientID in clientsCompleted)
-        {
-            foreach (PlayerData playerData in GameMultiplayer.Instance.GetRoomPlayerDataNetworkList())
-            {
-                //Debug.Log(playerData.clientID);
-                if (clientID == playerData.clientID)
-                {
-                    SpawnPlayerObjectToWaitingRoom(clientID);
-                }
-            }
-        }
-        
-
-        //client timedout show grey out icon
-    }
+    
 
 
     public void LoadGameScene()
@@ -189,12 +142,13 @@ public class WaitingRoomManager : NetworkBehaviour
 
     }
 
-    public void ReturnToWaitingRoom()
+
+
+    
+    private void OnDisable()
     {
-        Debug.Log("Returning back to Lobby");
-        //load scene: lobby
-        NetworkManager.SceneManager.LoadScene("Lobby", LoadSceneMode.Single);
 
+        
     }
-
+    
 }

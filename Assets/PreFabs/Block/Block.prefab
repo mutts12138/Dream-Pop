@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5391682867514195189}
   - component: {fileID: 5784484534296088088}
   - component: {fileID: 8442334408672482232}
-  - component: {fileID: 4285096721287167312}
+  - component: {fileID: 7842766121746562396}
   m_Layer: 6
   m_Name: Block
   m_TagString: Untagged
@@ -104,7 +104,7 @@ MonoBehaviour:
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
---- !u!114 &4285096721287167312
+--- !u!114 &7842766121746562396
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -113,9 +113,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 5854867463533343647}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7426c66b996f874a80c33440c619db5, type: 3}
+  m_Script: {fileID: 11500000, guid: e18ce60dbb5f690418b05e1d06413d2b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  canBeDestroyed: 0
 --- !u!1 &6066874289911880248
 GameObject:
   m_ObjectHideFlags: 0

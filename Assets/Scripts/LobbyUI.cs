@@ -11,6 +11,9 @@ using UnityEngine.UI;
 
 public class LobbyUI : MonoBehaviour
 {
+    [SerializeField] private Transform lobbyListContainer;
+    [SerializeField] private Transform lobbyTemplate;
+
     [SerializeField] private Button mainMenuBTN;
     [SerializeField] private Button createRoomBTN;
     [SerializeField] private Button quickJoinBTN;
@@ -18,16 +21,15 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private Button joinGameByCodeBTN;
 
     [SerializeField] private CreateRoomUI createRoomUI;
-    [SerializeField] private AuthenticationUI authenticationUI;
+    
+    
 
-    [SerializeField] private Transform lobbyContainer;
-    [SerializeField] private Transform lobbyTemplate;
-    private void Awake()
+    private void Start()
     {
-
+        // LobbyManager.Instance.OnJoinFailedPassword += (object sender, EventArgs e) => { Hide(); };
         mainMenuBTN.onClick.AddListener(() =>
         {
-            
+
             SceneLoader.Load(SceneLoader.Scene.MainMenu);
         });
 
@@ -58,12 +60,6 @@ public class LobbyUI : MonoBehaviour
             LobbyManager.Instance.JoinLobbyByCode(LobbyManager.Instance.lobbyCode);
         });
 
-        lobbyTemplate.gameObject.SetActive(false);
-    }
-
-    private void Start()
-    {
-       // LobbyManager.Instance.OnJoinFailedPassword += (object sender, EventArgs e) => { Hide(); };
 
         LobbyManager.Instance.OnLobbyListChanged += LobbyManager_OnLobbyListChanged;
         /*
@@ -71,9 +67,11 @@ public class LobbyUI : MonoBehaviour
         {
             Hide();
         }*/
+        Debug.Log("AAAAAAAAAAAAAAAAAAAA " + lobbyListContainer);
+        lobbyTemplate.gameObject.SetActive(false);
     }
 
-    private void LobbyManager_OnLobbyListChanged(object sender, LobbyManager.OnLobbyListChangedEventArgs e)
+    private void LobbyManager_OnLobbyListChanged(object sender, LobbyManager.OnLobbyListEventArgs e)
     {
         UpdateLobbyList(e.lobbyList);
     }
@@ -99,7 +97,8 @@ public class LobbyUI : MonoBehaviour
     private void UpdateLobbyList(List<Lobby> lobbyList)
     {
         //clean up
-        foreach(Transform child in lobbyContainer)
+        Debug.Log(lobbyListContainer);
+        foreach(Transform child in lobbyListContainer)
         {
             if (child == lobbyTemplate) continue;
             Destroy(child.gameObject);
@@ -108,13 +107,13 @@ public class LobbyUI : MonoBehaviour
         //putting in new
         foreach (Lobby lobby in lobbyList)
         {
-            Transform lobbyTransform = Instantiate(lobbyTemplate, lobbyContainer);
+            Transform lobbyTransform = Instantiate(lobbyTemplate, lobbyListContainer);
             lobbyTransform.gameObject.SetActive(true);
             lobbyTransform.GetComponent<LobbyListSingleUI>().SetLobby(lobby);
         }
     }
 
-    private void OnDestory()
+    private void OnDestroy()
     {
         LobbyManager.Instance.OnLobbyListChanged -= LobbyManager_OnLobbyListChanged;
     }
