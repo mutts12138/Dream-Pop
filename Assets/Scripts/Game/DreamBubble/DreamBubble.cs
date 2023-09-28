@@ -345,7 +345,7 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
 
 
         //disable instead of destroy
-        GetComponent<NetworkObject>().Despawn();
+        
         Destroy(gameObject);
     }
 
@@ -400,4 +400,12 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
 
     }
 
+    public override void OnDestroy()
+    {
+        if (IsServer)
+        {
+            gameObject.GetComponent<NetworkObject>().Despawn();
+        }
+        base.OnDestroy();
+    }
 }

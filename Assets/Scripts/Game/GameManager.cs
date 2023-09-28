@@ -11,10 +11,9 @@ public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [SerializeField] private PlayerCharacter playerPreFab;
-    [SerializeField] private PlayerUI playerUIPreFab;
+    
 
-    public PlayerCharacter[] playerObjectsArray { get; private set; } = new PlayerCharacter[8];
+    public PlayerCharacter[] playerCharacterObjectsArray { get; private set; } = new PlayerCharacter[8];
 
     private NetworkVariable<float> roundTimer;
 
@@ -53,15 +52,15 @@ public class GameManager : NetworkBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        
 
 
         roundTimer = new NetworkVariable<float>(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         gameState = new NetworkVariable<GameStates>(GameStates.waitingToStart, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-        if (!IsServer) return;
+        
         //gameObject.GetComponent<NetworkObject>().Spawn(true);
-
+       
 
 
         //get playerdata from lobbymanager(doesnt destroy on load)
@@ -73,6 +72,7 @@ public class GameManager : NetworkBehaviour
 
     private void Start()
     {
+
         if (!IsServer) return;
 
         gameState.OnValueChanged += (GameStates previousValue, GameStates newValue) =>
@@ -82,23 +82,28 @@ public class GameManager : NetworkBehaviour
     }
     public override void OnNetworkSpawn()
     {
+        DontDestroyOnLoad(gameObject);
         //initialize players
 
         //LobbyManager.Instance.SpawnPlayerObjectClientRpc(localClientID);
 
 
         if (!IsServer) return;
-        NetworkManager.SceneManager.OnLoadEventCompleted += (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) =>
-        {
-            NetworkManager_OnLoadEventCompleted(sceneName, loadSceneMode, clientsCompleted, clientsTimedOut);
-        };
+        NetworkManager.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
 
+    }
+
+    private void SceneManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
+        //actually get if waitroom or gamemap from MAPDATA
+        if (sceneName == "WaitingRoom") return;
+        InitializeRound(sceneName, loadSceneMode, clientsCompleted, clientsTimedOut);
     }
 
     private void OnDisable()
     {
         if (!IsServer) return;
-        NetworkManager.SceneManager.OnLoadEventCompleted -= (string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut) => { NetworkManager_OnLoadEventCompleted(sceneName, loadSceneMode, clientsCompleted, clientsTimedOut); };
+        NetworkManager.SceneManager.OnLoadEventCompleted -= SceneManager_OnLoadEventCompleted;
     }
 
 
@@ -110,21 +115,12 @@ public class GameManager : NetworkBehaviour
 
     }
 
-
-    private void NetworkManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
-    {
-        if (sceneName == "WaitingRoom") return;
-        InitializeRound(sceneName, loadSceneMode, clientsCompleted, clientsTimedOut);
-    }
-
     private void InitializeRound(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
         //when everyone is loaded
-        //spawn player objects
-        SpawnAllPlayerObjectsToGame(clientsCompleted, clientsTimedOut);
+        //spawn player object
 
         //bind PlayerUI to player
-        InstantiatePlayerUIClientRpc();
 
         ImplementGameMode();
 
@@ -138,6 +134,27 @@ public class GameManager : NetworkBehaviour
 
     }
 
+
+   
+        
+        
+
+        //client timedout show grey out icon
+        /*
+        for (int i = 0; i < playerObjectsArray.Length; i++)
+        {
+            if (playerObjectsArray[i] != null)
+            {
+                Debug.Log("player slot " + i + ": " + playerObjectsArray[i].ownerClientID.Value);
+            }
+            else
+            {
+                Debug.Log("player slot " + i + ": empty player slot");
+            }
+
+        }*/
+
+    
     /*[ClientRpc]
     private void CallRoundTimerCountDownClientRpc()
     {
@@ -207,91 +224,15 @@ public class GameManager : NetworkBehaviour
     }
     */
 
-    private void SpawnAllPlayerObjectsToGame(List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
-    {
-        if (!IsServer) return;
+    
 
-        Debug.Log("spawning all players.");
-
-
-
-        foreach (ulong clientID in clientsCompleted)
-        {
-            int count = 0;
-            foreach (PlayerData playerData in GameMultiplayer.Instance.GetRoomPlayerDataNetworkList())
-            {
-                //Debug.Log(playerData.clientID);
-                if (clientID == playerData.clientID)
-                {
-                    playerObjectsArray[count] = SpawnPlayerObjectToGame(playerData.clientID, playerData.teamNumber);
-                }
-
-                count++;
-            }
-        }
-        //client timedout show grey out icon
-        for (int i = 0; i < playerObjectsArray.Length; i++)
-        {
-            if (playerObjectsArray[i] != null)
-            {
-                Debug.Log("player slot " + i + ": " + playerObjectsArray[i].ownerClientID.Value);
-            }
-            else
-            {
-                Debug.Log("player slot " + i + ": empty player slot");
-            }
-
-        }
-
-    }
+    
+    
+    //playerUI.CallBindPlayerUIToPlayer();
 
 
-    private PlayerCharacter SpawnPlayerObjectToGame(ulong clientId, int teamNumber)
-    {
 
-
-        PlayerCharacter playerObj = Instantiate(playerPreFab);
-
-        //if (NetworkManager.LocalClientId != clientID) return;
-
-        playerObj.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
-
-        playerObj.SetOwnerClientId(clientId);
-
-        playerObj.SetTeamNumber(teamNumber);
-
-        //Debug.Log(teamNumber);
-
-        Vector3 spawnPosition = AssignSpawnPointPosition(playerObj.teamNumber.Value);
-        playerObj.SetPlayerPositionClientRpc(spawnPosition);
-
-        return playerObj;
-        //playerObj.GetComponent<NetworkObject>().Spawn(true);
-        //Debug.Log("ClientID: " + clientID + "_playerObject Spawned");
-        //Debug.Log(NetworkManager.Singleton.ConnectedClients[NetworkManager.Singleton.LocalClientId].PlayerObject);
-
-    }
-
-    [ClientRpc]
-    private void InstantiatePlayerUIClientRpc()
-    {
-        PlayerUI playerUI = Instantiate(playerUIPreFab);
-        playerUI.CallBindPlayerUIToPlayer();
-    }
-
-    private Vector3 AssignSpawnPointPosition(int teamNumber)
-    {
-        foreach (SpawnPoint spawnPoint in MapData.Instance.GetSpawnPoints())
-        {
-            if (spawnPoint.GetIsTaken() == false && spawnPoint.GetTeamNumber() == teamNumber)
-            {
-                return spawnPoint.transform.position;
-            }
-        }
-
-        return Vector3.zero;
-
-    }
+    
 
 
     private void ImplementGameMode()
@@ -302,7 +243,7 @@ public class GameManager : NetworkBehaviour
         switch (GameModeData.Instance.gameModeName)
         {
             case "Elimination":
-                foreach(PlayerCharacter player in playerObjectsArray)
+                foreach(PlayerCharacter player in playerCharacterObjectsArray)
                 {
                     if(player != null)
                     {
@@ -368,7 +309,7 @@ public class GameManager : NetworkBehaviour
 
     public PlayerCharacter[] GetPlayerObjArray()
     {
-        return playerObjectsArray;
+        return playerCharacterObjectsArray;
     }
     
     

@@ -124,4 +124,12 @@ public class PickUpObject : NetworkBehaviour
         }
 
     }
+    public override void OnDestroy()
+    {
+        if (IsServer)
+        {
+            gameObject.GetComponent<NetworkObject>().Despawn();
+        }
+        base.OnDestroy();
+    }
 }

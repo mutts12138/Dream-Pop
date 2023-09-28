@@ -16,9 +16,7 @@ public class AuthenticationManager : MonoBehaviour
     public event EventHandler OnAuthenticationSuccess;
     public event EventHandler OnAuthenticationFailed;
 
-    public string playerName;
-    
-
+    public string playerName { get;  set; }
     private void Awake()
     {
         if (Instance != null)
@@ -61,8 +59,7 @@ public class AuthenticationManager : MonoBehaviour
     {
         try
         {
-            Debug.Log("this is called");
-            this.playerName = playerName;
+            //Debug.Log("this is called");
             InitializationOptions InitializationOptions = new InitializationOptions();
 
 
@@ -81,6 +78,9 @@ public class AuthenticationManager : MonoBehaviour
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
 
             OnAuthenticationSuccess?.Invoke(this, EventArgs.Empty);
+
+            //set the localplayerdata
+            LocalPlayerData.Instance.UpdateLocalPlayerData(new PlayerData(AuthenticationService.Instance.PlayerId));
         }
         catch (AuthenticationException e)
         {

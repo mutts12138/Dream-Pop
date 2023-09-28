@@ -8,7 +8,7 @@ using UnityEngine;
 using static PlayerCharacter;
 using System;
 
-public class PlayerUI : MonoBehaviour
+public class PlayerInGameUI : MonoBehaviour
 {
     [SerializeField] private Button BindPlayerUIToLocalClientPlayerObjectBTN;
 
@@ -22,6 +22,8 @@ public class PlayerUI : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
+
+
         BindPlayerUIToLocalClientPlayerObjectBTN.onClick.AddListener(() =>
         {
             Debug.Log(player);

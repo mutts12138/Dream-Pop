@@ -1,22 +1,23 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
 public struct PlayerData : INetworkSerializable, IEquatable<PlayerData>
 {
-    public ulong clientID;
-    public int teamNumber;
+    public FixedString32Bytes playerId;
+    public ulong clientId;
 
     public int winCount;
     public int loseCount;
     public int drawCount;
 
-    public PlayerData(ulong newClientID)
+    public PlayerData(string newPlayerId)
     {
-        clientID = newClientID;
-        teamNumber = -1;
+        playerId = newPlayerId;
+        clientId = 0;
         winCount = 0;
         loseCount = 0;
         drawCount = 0;
@@ -24,22 +25,17 @@ public struct PlayerData : INetworkSerializable, IEquatable<PlayerData>
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
-        serializer.SerializeValue(ref clientID);
-        serializer.SerializeValue(ref teamNumber);
+        serializer.SerializeValue(ref playerId);
+        serializer.SerializeValue(ref clientId);
         serializer.SerializeValue(ref winCount);
         serializer.SerializeValue(ref drawCount);
         serializer.SerializeValue(ref loseCount);
     }
 
 
-    public void SetTeamNumber(int newTeamNumber)
-    {
-        teamNumber = newTeamNumber;
-    }
-
 
     public bool Equals(PlayerData other)
     {
-        return clientID == other.clientID;
+        return clientId == other.clientId;
     }
 }
