@@ -29,7 +29,6 @@ public class WaitingRoomManager : NetworkBehaviour
         }
         Instance = this;
 
-        DontDestroyOnLoad(gameObject);
     }
 
     private void Start()
@@ -46,6 +45,7 @@ public class WaitingRoomManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        DontDestroyOnLoad(gameObject);
         if (!IsServer) return;
         InitializeWaitingRoom();
         
@@ -69,76 +69,18 @@ public class WaitingRoomManager : NetworkBehaviour
 
     private void InitializeWaitingRoom()
     {
-        NetworkManager.Singleton.OnClientConnectedCallback += (ulong clientID) => { OnNetworkManager_OnClientConnectedCallBack(clientID); };
-        NetworkManager.Singleton.OnClientDisconnectCallback += (ulong clientID) => { OnNetworkManager_OnClientDisconnectedCallBack(clientID); };
-        SpawnAllPlayerObjectsToWaitingRoom();
-    }
-
-    //calls when coming back to lobby after game ends
-    private void SpawnAllPlayerObjectsToWaitingRoom()
-    {
-        if (!IsServer) return;
-
-        Debug.Log("spawning all players.");
-
-        foreach (PlayerData playerData in GameMultiplayer.Instance.GetRoomPlayerDataNetworkList())
-        { 
-            SpawnPlayerObjectToWaitingRoom(playerData.clientID);
-        }
-        //client timedout show grey out icon
-    }
-
-    private void OnNetworkManager_OnClientConnectedCallBack(ulong clientID)
-    {
-        AddPlayerToWaitingRoom(clientID);
-    }
-
-    private void OnNetworkManager_OnClientDisconnectedCallBack(ulong clientID)
-    {
-        RemovePlayerFromWaitingRoom(clientID);
-    }
-
-    
-
-    //this for UI purposes?
-    private void AddPlayerToWaitingRoom(ulong clientID)
-    {
-        //spawn playerObject for clients
-        SpawnPlayerObjectToWaitingRoom(clientID);
-
-        //when maxed out set connection approval to false
-    }
-
-    private void RemovePlayerFromWaitingRoom(ulong clientID)
-    {
         
     }
 
-    public void SpawnPlayerObjectToWaitingRoom(ulong clientID)
-    {
-        PlayerCharacter playerObj = Instantiate(playerPreFab);
-
-        //if (NetworkManager.LocalClientId != clientID) return;
-
-        playerObj.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientID, true);
-
-        playerObj.SetOwnerClientId(clientID);
-
-        //playerObj.GetComponent<NetworkObject>().Spawn(true);
-        //Debug.Log("ClientID: " + clientID + "_playerObject Spawned");
-        //Debug.Log(NetworkManager.Singleton.ConnectedClients[NetworkManager.Singleton.LocalClientId].PlayerObject);
-    }
-
-
-    
-
+    //calls when coming back to lobby after game ends
+  
 
     public void LoadGameScene()
     {
 
 
         //SceneManager.LoadScene(1);
-        NetworkManager.SceneManager.LoadScene("TestMap", LoadSceneMode.Single);
+        SceneLoader.LoadNetwork(SceneLoader.Scene.TestMap);
 
     }
 

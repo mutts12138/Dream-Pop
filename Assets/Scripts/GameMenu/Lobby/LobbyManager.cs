@@ -325,7 +325,7 @@ public class LobbyManager : MonoBehaviour
                 lobbyList = queryResponse.Results
             });
 
-            Debug.Log("Lobbies found:" + queryResponse.Results.Count);
+            //Debug.Log("Lobbies found:" + queryResponse.Results.Count);
 
             foreach (Lobby lobby in queryResponse.Results)
             {
@@ -534,7 +534,7 @@ public class LobbyManager : MonoBehaviour
         Debug.Log("Players in lobby " + lobby.Name + " " + lobby.Data[KEY_GAMEMODE].Value);
         foreach ( Player player in lobby.Players)
         {
-            Debug.Log(player.Id + " " + player.Data["PlayerName"].Value);
+            Debug.Log("Id: " + player.Id + " Name: " + player.Data["PlayerName"].Value);
         }
     }
 

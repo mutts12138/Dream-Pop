@@ -61,7 +61,7 @@ public class WaitingRoomUI : MonoBehaviour
     private void Start()
     {
         //subscribe lobbylist change delegate
-        GameMultiplayer.Instance.GetRoomPlayerDataNetworkList().OnListChanged += (NetworkListEvent<PlayerData> changeEvent) => { UpdateDisplayPlayers(); };
+        GameMultiplayer.Instance.GetPlayerDataNetworkList().OnListChanged += (NetworkListEvent<PlayerData> changeEvent) => { UpdateDisplayPlayers(); };
     }
 
     private void OnDisable()
@@ -71,43 +71,43 @@ public class WaitingRoomUI : MonoBehaviour
         team1BTN.onClick.RemoveAllListeners();
         team2BTN.onClick.RemoveAllListeners();
         leaveBTN.onClick.RemoveAllListeners();
-        GameMultiplayer.Instance.GetRoomPlayerDataNetworkList().OnListChanged -= (NetworkListEvent<PlayerData> changeEvent) => { UpdateDisplayPlayers(); };
+        GameMultiplayer.Instance.GetPlayerDataNetworkList().OnListChanged -= (NetworkListEvent<PlayerData> changeEvent) => { UpdateDisplayPlayers(); };
     }
 
     private void UpdateDisplayPlayers()
     {
         int index = 0;
-        foreach (PlayerData player in GameMultiplayer.Instance.GetRoomPlayerDataNetworkList())
+        foreach (PlayerData player in GameMultiplayer.Instance.GetPlayerDataNetworkList())
         {
             switch (index)
             {
                 case 0:
-                    player1Text.text = player.clientID.ToString();
+                    player1Text.text = player.clientId.ToString();
                     break;
                 case 1:
-                    player2Text.text = player.clientID.ToString();
+                    player2Text.text = player.clientId.ToString();
                     break;
                 case 2:
-                    player3Text.text = player.clientID.ToString();
+                    player3Text.text = player.clientId.ToString();
                     break;
                 case 3:
-                    player4Text.text = player.clientID.ToString();
+                    player4Text.text = player.clientId.ToString();
                     break;
                 case 4:
-                    player5Text.text = player.clientID.ToString();
+                    player5Text.text = player.clientId.ToString();
                     break;
                 case 5:
-                    player6Text.text = player.clientID.ToString();
+                    player6Text.text = player.clientId.ToString();
                     break;
                 case 6:
-                    player7Text.text = player.clientID.ToString();
+                    player7Text.text = player.clientId.ToString();
                     break;
                 case 7:
-                    player8Text.text = player.clientID.ToString();
+                    player8Text.text = player.clientId.ToString();
                     break;
                 
             }
-            
+            index++;
         }
         
             

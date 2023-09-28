@@ -35,7 +35,10 @@ public class PlayerCharacter : NetworkBehaviour
     public NetworkVariable<ulong> ownerClientID { get; private set; }
     public NetworkVariable<int> teamNumber { get; private set; }
 
-
+    //set via map data
+    public Vector3 spawnPosition { get; private set; }
+    private float gravityAcc;
+    private float gravityMaxSpeed;
 
 
     //player stats
@@ -58,13 +61,9 @@ public class PlayerCharacter : NetworkBehaviour
     public NetworkVariable<bool> isEliminated { get; private set; }
 
 
-
-
-    private Vector3 spawnPosition;
-
     
     private float baseMoveSpeed;
-    public int currentMoveSpeedLevel;
+    private int currentMoveSpeedLevel;
     private int minMoveSpeedLevel;
     private int maxMoveSpeedLevel;
 
@@ -88,13 +87,6 @@ public class PlayerCharacter : NetworkBehaviour
 
     //movement collision detection layermask
     LayerMask movementLayerMaskIgnore;
-    
-
-    //gravity numbers get from game manager
-    private float gravityAcc;
-    private float gravityMaxSpeed;
-
-
 
     //player state
     //normal: 0, asleep: 1, death: 2
@@ -111,7 +103,6 @@ public class PlayerCharacter : NetworkBehaviour
     //private NetworkVariable<bool> playerColliderEnabled = new NetworkVariable<bool>(true, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     private float verticalVelocity = 0f;
-
 
     //player state for player animator
     public bool isMoving { get; private set; }
@@ -162,12 +153,6 @@ public class PlayerCharacter : NetworkBehaviour
 
         //event subscribe
         //currentPlayerState.OnValueChanged += (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
-
-
-        if(GameMultiplayer.Instance != null)
-        {
-            teamNumber.OnValueChanged += (int previousTeamNumber, int newTeamNumber) => { GameMultiplayer.Instance.SetPlayerTeamNumberServerRpc(ownerClientID.Value, newTeamNumber); };
-        }
         
         //set character and Stats
         SetInitialStats();
@@ -196,23 +181,40 @@ public class PlayerCharacter : NetworkBehaviour
         CallChangeCharacterBaseStatLevelsServerRpc(3, 2, 2);
 
 
-        //gravity
-        if(MapData.Instance != null)
+        //Set info based on mapdata if exist.
+        ApplyMapData(teamNumber.Value);
+    }
+
+    private void ApplyMapData(int teamNumber)
+    {
+        if (MapData.Instance != null)
         {
+            //spawnPosition
+            foreach (SpawnPoint spawnPoint in MapData.Instance.GetSpawnPoints())
+            {
+                if (spawnPoint.GetIsTaken() == false && spawnPoint.GetTeamNumber() == teamNumber)
+                {
+                    spawnPosition = spawnPoint.transform.position;
+                    gameObject.transform.position = spawnPosition;
+                }
+            }
+
+            //over map property: gravity
             gravityAcc = MapData.Instance.GetGlobalGravityAcc();
             gravityMaxSpeed = MapData.Instance.GetGlobalGravityMaxSpeed();
+            
         }
         else
         {
+            
+            spawnPosition = Vector3.zero;
+
             gravityAcc = -100f;
             gravityMaxSpeed = -10f;
         }
-        
-
-        
     }
 
-
+   
     private void Update()
     {
         if (IsServer)

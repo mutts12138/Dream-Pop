@@ -67,7 +67,7 @@ public class LobbyUI : MonoBehaviour
         {
             Hide();
         }*/
-        Debug.Log("AAAAAAAAAAAAAAAAAAAA " + lobbyListContainer);
+        //Debug.Log("AAAAAAAAAAAAAAAAAAAA " + lobbyListContainer);
         lobbyTemplate.gameObject.SetActive(false);
     }
 
@@ -97,7 +97,7 @@ public class LobbyUI : MonoBehaviour
     private void UpdateLobbyList(List<Lobby> lobbyList)
     {
         //clean up
-        Debug.Log(lobbyListContainer);
+        //Debug.Log(lobbyListContainer);
         foreach(Transform child in lobbyListContainer)
         {
             if (child == lobbyTemplate) continue;

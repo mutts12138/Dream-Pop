@@ -62,6 +62,8 @@ public class ServerManager : MonoBehaviour
     //calls when lobby created, lobby host migrated
     public async void CreateRelay()
     {    
+        //load the loading scene
+        SceneLoader.Load(SceneLoader.Scene.Loading);
         try
         {
             //allocate relay and start host and goes to the waitingroom\
@@ -90,8 +92,12 @@ public class ServerManager : MonoBehaviour
     //calls when joinging the lobby
     public async void JoinRelay()
     {
+        //load the loading scene
+        SceneLoader.Load(SceneLoader.Scene.Loading);
         try
         {
+            
+
             string relayJoinCode = LobbyManager.Instance.joinedLobby.Data[LobbyManager.KEY_RELAY_JOIN_CODE].Value;
 
             JoinAllocation joinAllocation = await JoinRelay(relayJoinCode);
@@ -170,18 +176,14 @@ public class ServerManager : MonoBehaviour
         OnCreateServerStarted?.Invoke(this, EventArgs.Empty);
         IsVoluntaryDisconnect = false;
         NetworkManager.Singleton.OnServerStopped += NetworkManager_OnServerStopped;
+
+        
         if (NetworkManager.Singleton.StartHost())
         {
-            
-            
-            //load the loading scene
-            SceneLoader.Load(SceneLoader.Scene.Loading);
 
             OnCreateServerSuccess?.Invoke(this, EventArgs.Empty);
-
             LobbyManager.Instance.UpdateServerStatus(ServerStatus.Running.ToString());
 
-            
 
             SceneLoader.LoadNetwork(SceneLoader.Scene.WaitingRoom);
         }
@@ -207,8 +209,7 @@ public class ServerManager : MonoBehaviour
         //startclient bool happens instantly, but takes time for netcode to connect.
         if (NetworkManager.Singleton.StartClient())
         {
-            //load the loading scene
-            SceneLoader.Load(SceneLoader.Scene.Loading);
+            
 
             
             OnJoinServerSuccess?.Invoke(this, EventArgs.Empty);

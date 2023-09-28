@@ -40,6 +40,7 @@ public class ServerMessage : MonoBehaviour
 
     private void ServerManager_OnCreateServerFailed(object sender, OnFailReasonEventArgs e)
     {
+        //back to lobby
         MessageUI.Instance.ShowMessage("Failed to create server" + ": " + e.failReason, true);
         MessageUI.Instance.ShowCloseBTN();
     }

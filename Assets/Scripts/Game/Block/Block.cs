@@ -46,7 +46,7 @@ public class Block : NetworkBehaviour, Ipoppable
         SetIsPopped(true);
 
         if(!canBeDestroyed) return;
-        gameObject.GetComponent<NetworkObject>().Despawn();
+        
         Destroy(gameObject);
         
     }
@@ -59,5 +59,14 @@ public class Block : NetworkBehaviour, Ipoppable
     public void SetIsPopped(bool newIsPopped)
     {
         isPopped = newIsPopped;
+    }
+
+    public override void OnDestroy()
+    {
+        if(IsServer)
+        {
+            gameObject.GetComponent<NetworkObject>().Despawn();
+        }
+        base.OnDestroy();
     }
 }

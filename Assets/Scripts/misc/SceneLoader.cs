@@ -40,11 +40,11 @@ public class SceneLoader : MonoBehaviour
     {
         if (number == 0)
         {
-            SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene("WaitingRoom");
         }
         if (number == 1)
         {
-            SceneManager.LoadScene("Lobby");
+            SceneManager.LoadScene("TestMap");
         }
     }
     

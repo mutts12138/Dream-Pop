@@ -83,7 +83,7 @@ public class LobbyRoomUI : MonoBehaviour
         //clean up
         lobby = updatedLobby;
 
-        Debug.Log(playerListContainer);
+        //Debug.Log(playerListContainer);
         foreach (Transform child in playerListContainer)
         {
             if (child == playerTemplate) continue;
