@@ -6,6 +6,8 @@ using UnityEngine.SceneManagement;
 using JetBrains.Annotations;
 using UnityEngine.UI;
 using System;
+using static UnityEngine.Rendering.BoolParameter;
+using Unity.VisualScripting;
 //using UnityEditor.PackageManager;
 
 public class WaitingRoomManager : NetworkBehaviour
@@ -77,20 +79,30 @@ public class WaitingRoomManager : NetworkBehaviour
 
     public void LoadGameScene()
     {
+        //What happens when you destroy GameObject in Unity?When you destroy a gameObject, it sets a "destroyed" flag in Unity's secret reference. At the end of the frame, Unity unhooks the real gameObject from it's list, letting it be garbage collected.
+        gameObject.GetComponent<NetworkObject>().Despawn();
+        Destroy(gameObject);
 
 
-        //SceneManager.LoadScene(1);
         SceneLoader.LoadNetwork(SceneLoader.Scene.TestMap);
 
     }
 
 
 
-    
-    private void OnDisable()
+    public override void OnDestroy()
     {
+        if (IsServer)
+        {
+            if (gameObject.GetComponent<NetworkObject>().IsSpawned == true)
+            {
+                gameObject.GetComponent<NetworkObject>().Despawn();
+            }
 
-        
+        }
+
+        base.OnDestroy();
     }
-    
+
+
 }

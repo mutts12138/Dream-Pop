@@ -161,6 +161,8 @@ public class PlayerCharacter : NetworkBehaviour
      private void OnDisable()
     {
         currentLayer.OnValueChanged -= (int previousLayer, int newLayer) => { ChangeLayer(currentLayer.Value); };
+
+
         if (gameInput != null)
         {
             gameInput.OnPlaceBubble -= GameInput_OnPlaceBubble;
@@ -372,7 +374,7 @@ public class PlayerCharacter : NetworkBehaviour
         {
             
             //GameMultiplayer.Instance.SpawnDreamBubbleObject();
-            SpawnDreamBubbleObject();
+            SpawnDreamBubbleObject(dreamBubbleLocation);
             ChangeBubbleCountClientRpc(1);
         }
 
@@ -382,10 +384,10 @@ public class PlayerCharacter : NetworkBehaviour
         */
     }
 
-    private void SpawnDreamBubbleObject()
+    private void SpawnDreamBubbleObject(Vector3 spawnPosition)
     {
         DreamBubble dreamBubbleTransform = Instantiate(dreamBubble);
-        dreamBubbleTransform.transform.position = transform.position;
+        dreamBubbleTransform.transform.position = spawnPosition;
         dreamBubbleTransform.GetComponent<NetworkObject>().Spawn(true);
 
         //Debug.Log(this);
@@ -757,6 +759,20 @@ public class PlayerCharacter : NetworkBehaviour
         if (!IsOwner) return;
         transform.position = newPosition;
     }
-     
-   
+
+    public override void OnDestroy()
+    {
+        
+        if (IsServer)
+        {
+            if ( gameObject.GetComponent<NetworkObject>().IsSpawned == true ) 
+            {
+                gameObject.GetComponent<NetworkObject>().Despawn();
+                
+            }
+            
+        }
+
+        base.OnDestroy();
+    }
 }

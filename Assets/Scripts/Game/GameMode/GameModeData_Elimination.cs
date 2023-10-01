@@ -28,7 +28,7 @@ public class GameModeData_Elimination : GameModeData
 
         int teamsRemainingCount = 8;
         //get the amount of players alive in each team
-        foreach (PlayerCharacter playerObj in GameManager.Instance.GetPlayerObjArray())
+        foreach (PlayerCharacter playerObj in GameMultiplayer.Instance.playerCharacterList)
         {
             if(playerObj != null)
             {
@@ -67,7 +67,7 @@ public class GameModeData_Elimination : GameModeData
         int[] PlayersAliveCount_inEachTeam = new int[8];
 
         //get the amount of players alive in each team
-        foreach (PlayerCharacter playerObj in GameManager.Instance.GetPlayerObjArray())
+        foreach (PlayerCharacter playerObj in GameMultiplayer.Instance.playerCharacterList)
         {
             if (playerObj != null)
             {

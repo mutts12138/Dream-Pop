@@ -7,7 +7,7 @@ public abstract class PickUpSO : ScriptableObject
 {
     //holds the pickup visual,sound and values of stat changes?
     public string pickUpName;
-    public Transform prefab;
+    public PickUpObject pickUpPrefab;
 
     //attributes
     public bool IsPickUpStacked;

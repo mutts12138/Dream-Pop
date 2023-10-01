@@ -10,12 +10,15 @@ public struct PlayerData : INetworkSerializable, IEquatable<PlayerData>
     public FixedString32Bytes playerId;
     public ulong clientId;
 
+    public FixedString32Bytes name;
+
     public int winCount;
     public int loseCount;
     public int drawCount;
 
     public PlayerData(string newPlayerId)
     {
+        name = "";
         playerId = newPlayerId;
         clientId = 0;
         winCount = 0;
@@ -25,6 +28,7 @@ public struct PlayerData : INetworkSerializable, IEquatable<PlayerData>
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
+        serializer.SerializeValue(ref name);
         serializer.SerializeValue(ref playerId);
         serializer.SerializeValue(ref clientId);
         serializer.SerializeValue(ref winCount);
@@ -36,6 +40,6 @@ public struct PlayerData : INetworkSerializable, IEquatable<PlayerData>
 
     public bool Equals(PlayerData other)
     {
-        return clientId == other.clientId;
+        return playerId == other.playerId;
     }
 }

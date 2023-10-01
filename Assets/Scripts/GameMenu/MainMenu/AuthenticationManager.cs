@@ -80,7 +80,9 @@ public class AuthenticationManager : MonoBehaviour
             OnAuthenticationSuccess?.Invoke(this, EventArgs.Empty);
 
             //set the localplayerdata
-            LocalPlayerData.Instance.UpdateLocalPlayerData(new PlayerData(AuthenticationService.Instance.PlayerId));
+            PlayerData newPlayerData = new PlayerData(AuthenticationService.Instance.PlayerId);
+            newPlayerData.name = playerName;
+            LocalPlayerData.Instance.UpdateLocalPlayerData(newPlayerData);
         }
         catch (AuthenticationException e)
         {

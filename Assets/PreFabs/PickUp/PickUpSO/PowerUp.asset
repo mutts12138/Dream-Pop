@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6e95e3d9fc608540b0686b0032ec0b9, type: 3}
   m_Name: PowerUp
   m_EditorClassIdentifier: 
-  objectName: 
-  prefab: {fileID: 0}
+  pickUpName: 
+  pickUpPrefab: {fileID: 203053396834647955, guid: 24b169b13a4d9fb4b97978985017f986,
+    type: 3}
   IsPickUpStacked: 1
   deltaBubbleCountLevel: 0
   deltaBubblePowerLevel: 1

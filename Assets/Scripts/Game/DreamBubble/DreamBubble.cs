@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
 
-public class DreamBubble : NetworkBehaviour, Ipoppable
+public class DreamBubble : NetworkBehaviour, ActivateByDreamPop
 {
     private float timerCountDown = 3.5f;
     private float popTime = 0.5f;
@@ -99,7 +99,7 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
             yield return waitForSeconds;
         }
   
-        Pop();  
+        Activate();  
     }
 
 
@@ -149,12 +149,10 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
 
 
         int playerLayer = 3;
-        int AsleepPlayerLayer = 7;
-        int pickUpLayer = 9;
+        int pickUpLayer = 7;
         int layerMask;
 
         layerMask = 1 << playerLayer;
-        layerMask = layerMask | 1 << AsleepPlayerLayer;
         layerMask = layerMask | 1 <<  pickUpLayer;
         //Debug.Log(layerMask);
 
@@ -180,11 +178,11 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         dreamBubbleVisual.GetComponent<Transform>().localScale = new Vector3(1.5f, 1.5f, 1.5f);
     }
 
-    public void Pop()
+    public void Activate()
     {
         if (!IsServer) return;
         if (isPopped == true) return;
-        SetIsPopped(true);
+        SetIsActivated(true);
         timerCountDown = popTime;
 
         explosionRanges = CalculateExplosionRanges();
@@ -213,8 +211,11 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         Ray[] ray4Directions = { rayUp, rayDown, rayLeft, rayRight, rayTop, rayBelow};
 
         int layerNumber = 6;
-        int layerMask;
-        layerMask = 1 << layerNumber;
+        int layer2Number = 9;
+        int layerMask1 = 1 << layerNumber;
+        int layerMask2 = 1 << layer2Number;
+        int finalMask = layerMask1 | layerMask2;
+
 
         explosionRanges = new float[6];
 
@@ -222,15 +223,15 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         int counter = 0;
         foreach (Ray ray in ray4Directions)
         {
-            if (Physics.Raycast(ray, out RaycastHit raycastHit, popPowerDistance, layerMask))
+            if (Physics.Raycast(ray, out RaycastHit raycastHit, popPowerDistance, finalMask))
             {
-                if (raycastHit.transform.TryGetComponent(out Ipoppable poppable))
+                if (raycastHit.transform.TryGetComponent(out ActivateByDreamPop poppable))
                 {
                     //Debug.Log("got component");
-                    if (poppable.GetIsPopped() == false)
+                    if (poppable.GetIsActivated() == false)
                     {
                         //Debug.Log("called pop");
-                        poppable.Pop();
+                        poppable.Activate();
                     }
 
                 }
@@ -370,12 +371,12 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
         return isInflated;
     }
 
-    public bool GetIsPopped()
+    public bool GetIsActivated()
     {
         return isPopped;
     }
 
-    public void SetIsPopped(bool poppable)
+    public void SetIsActivated(bool poppable)
     {
         isPopped = poppable;
     }
@@ -404,8 +405,13 @@ public class DreamBubble : NetworkBehaviour, Ipoppable
     {
         if (IsServer)
         {
-            gameObject.GetComponent<NetworkObject>().Despawn();
+            if (gameObject.GetComponent<NetworkObject>().IsSpawned == true)
+            {
+                gameObject.GetComponent<NetworkObject>().Despawn();
+            }
+
         }
+
         base.OnDestroy();
     }
 }

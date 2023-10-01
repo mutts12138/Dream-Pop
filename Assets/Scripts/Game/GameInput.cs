@@ -5,6 +5,8 @@ using UnityEngine;
 
 public class GameInput : MonoBehaviour
 {
+    public static GameInput instance;
+
     private PlayerInputActions playerInputActions;
 
     public event EventHandler OnPlaceBubble;
@@ -14,22 +16,36 @@ public class GameInput : MonoBehaviour
 
     private void Awake()
     {
+        if(instance != null)
+        {
+            Destroy(gameObject);
+        }
+
+        instance = this;
+
         playerInputActions = new PlayerInputActions();
         playerInputActions.Player.Enable();
-
        
         playerInputActions.Player.PlaceBubble.performed += PlaceBubble_performed;
-        
-
         playerInputActions.Player.Jump.performed += Jump_performed;
     }
 
     private void OnDisable()
     {
         playerInputActions.Player.PlaceBubble.performed -= PlaceBubble_performed;
-
-
         playerInputActions.Player.Jump.performed -= Jump_performed;
+    }
+
+    public void EnablePlayerInputAction(bool enable)
+    {
+        if (enable)
+        {
+            playerInputActions.Player.Enable();
+        }
+        else
+        {
+            playerInputActions.Player.Disable();
+        }
     }
 
     private void Jump_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
@@ -54,4 +70,5 @@ public class GameInput : MonoBehaviour
         return inputVector;
     }
 
+    
 }
