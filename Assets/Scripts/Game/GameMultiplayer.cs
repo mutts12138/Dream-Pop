@@ -27,14 +27,18 @@ public class GameMultiplayer : NetworkBehaviour
     public event EventHandler OnPlayerDataNetworkListChanged;
 
     //playercharacter cant be serialized across network, so only server keep a copy
-    private List<PlayerCharacter> playerCharacterList;
+    public List<PlayerCharacter> playerCharacterList { get; private set; }
 
     public static GameMultiplayer Instance { get; private set; }
 
-    
+
+    [SerializeField] private PickUpSOListSO pickUpSOListSO;
+
     private void Awake()
     {
-        
+        PlayerDataNetworkList = new NetworkList<PlayerData>(new PlayerData[0], NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        playerCharacterList = new List<PlayerCharacter>();
+
         if (Instance != null)
         {
 
@@ -43,29 +47,24 @@ public class GameMultiplayer : NetworkBehaviour
         }
 
         Instance = this;
-        
-        
 
-        PlayerDataNetworkList = new NetworkList<PlayerData>(new PlayerData[0], NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        playerCharacterList = new List<PlayerCharacter>();
-        
-       
         
     }
     void Start()
     {
-        
-        
 
         if (!IsServer) return;
         NetworkManager.Singleton.OnClientConnectedCallback += (ulong clientID) => { NetworkManager_OnClientConnectedCallback(clientID); };
         NetworkManager.Singleton.OnClientDisconnectCallback += (ulong clientID) => { NetworkManager_OnClientDisconnectedCallback(clientID); };
+
         NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
     }
 
+
     private void SceneManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        playerCharacterList= new List<PlayerCharacter>();
+        
+        playerCharacterList = new List<PlayerCharacter>();
         SpawnAllPlayerObject();
     }
 
@@ -76,11 +75,14 @@ public class GameMultiplayer : NetworkBehaviour
         if (!IsServer) return;
         Debug.Log("network spawned");
 
-
-        //add host to the list first
-        AddNewPlayerToPlayerConnectedList(NetworkManager.Singleton.LocalClientId, LocalPlayerData.Instance.localPlayerData);
-        //playerCharacterList.Add(SpawnPlayerObject(NetworkManager.Singleton.LocalClientId));
-        SpawnAllPlayerObject();
+        if(Instance == this)
+        {
+            //add host to the list first
+            AddNewPlayerToPlayerConnectedList(NetworkManager.Singleton.LocalClientId, LocalPlayerData.Instance.localPlayerData);
+            //playerCharacterList.Add(SpawnPlayerObject(NetworkManager.Singleton.LocalClientId));
+            SpawnAllPlayerObject();
+        }
+        
     }
 
     // Update is called once per frame
@@ -231,7 +233,7 @@ public class GameMultiplayer : NetworkBehaviour
         }
     }
 
-
+  
 
 
     public PlayerCharacter SpawnPlayerObject(ulong clientId)
@@ -301,4 +303,49 @@ public class GameMultiplayer : NetworkBehaviour
     }
     */
     //do the same for pickup, buff ^^^^^^^^^^^
+
+    [ServerRpc(RequireOwnership = false)]
+    public void SpawnPickUpObjectServerRpc(Vector3 position, int pickUpSOIndex)
+    {
+        SpawnPickUpObject(position, GetPickUpSOFromIndex(pickUpSOIndex));
+    }
+
+
+    //need to implement an interface for GetNetworkObject(){return NetworkObject}
+
+    public void SpawnPickUpObject(Vector3 position, PickUpSO pickUpSO)
+    {
+        //check the pick up pool
+        //remove from pick up pool
+
+        PickUpObject pickUpTransform = Instantiate(pickUpSO.pickUpPrefab);
+        pickUpTransform.transform.position = position;
+        pickUpTransform.GetComponent<NetworkObject>().Spawn(true);
+    }
+
+    
+    private int GetPickUpSOIndex(PickUpSO pickUpSO)
+    {
+        return pickUpSOListSO.pickUpSOList.IndexOf(pickUpSO);
+    }
+
+
+    private PickUpSO GetPickUpSOFromIndex(int pickUpSOIndex)
+    {
+        return pickUpSOListSO.pickUpSOList[pickUpSOIndex];
+    }
+
+    public override void OnDestroy()
+    {
+        if (IsServer)
+        {
+            if (gameObject.GetComponent<NetworkObject>().IsSpawned == true)
+            {
+                gameObject.GetComponent<NetworkObject>().Despawn();
+            }
+
+        }
+
+        base.OnDestroy();
+    }
 }

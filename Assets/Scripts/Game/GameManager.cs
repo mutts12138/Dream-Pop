@@ -6,21 +6,22 @@ using System.Xml;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static UnityEngine.Rendering.BoolParameter;
 
 public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    
-
-    public PlayerCharacter[] playerCharacterObjectsArray { get; private set; } = new PlayerCharacter[8];
-
-    private NetworkVariable<float> roundTimer;
+    public NetworkVariable<float> countDownTimer {  get; private set; }
+    public NetworkVariable<float> roundTimer { get; private set; }
 
     private NetworkVariable<GameStates> gameState;
 
-
-    public event EventHandler onGameEnded;
+    public event EventHandler OnWaitingToStart;
+    public event EventHandler OnCountDownToStart;
+    public event EventHandler OnGamePlaying;
+    public event EventHandler OnGamePaused;
+    public event EventHandler OnGameOver;
 
     private Dictionary<ulong, bool> playerReadyDictionary;
 
@@ -43,6 +44,9 @@ public class GameManager : NetworkBehaviour
     //playerNumbers
     private void Awake()
     {
+        countDownTimer = new NetworkVariable<float>(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        roundTimer = new NetworkVariable<float>(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        gameState = new NetworkVariable<GameStates>(GameStates.waitingToStart, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         if (Instance != null)
         {
@@ -52,12 +56,11 @@ public class GameManager : NetworkBehaviour
         }
 
         Instance = this;
+
+
         
 
-
-        roundTimer = new NetworkVariable<float>(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        gameState = new NetworkVariable<GameStates>(GameStates.waitingToStart, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-
+        
         
         //gameObject.GetComponent<NetworkObject>().Spawn(true);
        
@@ -72,26 +75,116 @@ public class GameManager : NetworkBehaviour
 
     private void Start()
     {
+        gameState.OnValueChanged += (GameStates previousValue, GameStates newValue) =>
+        {
+            switch (newValue)
+            {
+                case GameStates.waitingToStart:
+                    OnWaitingToStart?.Invoke(this, EventArgs.Empty);
+                    break;
+                case GameStates.countDownToStart:
+                    OnCountDownToStart?.Invoke(this, EventArgs.Empty);
+                    break;
+                case GameStates.gamePlaying:
+                    OnGamePlaying?.Invoke(this, EventArgs.Empty);
+                    break;
+                case GameStates.gamePaused:
+                    OnGamePaused?.Invoke(this, EventArgs.Empty);
+                    break;
+                case GameStates.gameOver:
+                    OnGameOver?.Invoke(this, EventArgs.Empty);
+                    break;
+            }
+        };
+
+        OnWaitingToStart += GameManager_OnWaitingToStart;
+        OnCountDownToStart += GameManager_OnCountDownToStart;
+        OnGamePlaying += GameManager_OnGamePlaying;
+        OnGamePaused += GameManager_OnGamePaused;
+        OnGameOver += GameManager_OnGameOver;
 
         if (!IsServer) return;
 
-        gameState.OnValueChanged += (GameStates previousValue, GameStates newValue) =>
-        {
-            GameState_OnValueChanged(previousValue, newValue);
-        };
+
     }
     public override void OnNetworkSpawn()
     {
+
+        
+
         DontDestroyOnLoad(gameObject);
+
+
         //initialize players
 
         //LobbyManager.Instance.SpawnPlayerObjectClientRpc(localClientID);
 
 
         if (!IsServer) return;
+
         NetworkManager.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
+        
 
     }
+
+    
+    private void GameManager_OnWaitingToStart(object sender, EventArgs e)
+    {
+        Debug.Log("waiting to start");
+        //reset game manager
+        //ResetGameManager();
+
+    }
+    private void GameManager_OnCountDownToStart(object sender, EventArgs e)
+    {
+        GameInput.instance.EnablePlayerInputAction(false);
+        Debug.Log("countdown to start");
+    }
+    private void GameManager_OnGamePlaying(object sender, EventArgs e)
+    {
+        GameInput.instance.EnablePlayerInputAction(true);
+        Debug.Log("game is playing");
+        //activate player controls
+    }
+    private void GameManager_OnGamePaused(object sender, EventArgs e)
+    {
+        //not in use
+    }
+    private void GameManager_OnGameOver(object sender, EventArgs e)
+    {
+        Debug.Log("The Game has ended");
+        //deactivate player controls
+
+
+        //GameMultiplayer.Instance.UpdatePlayerScoring();
+
+
+        //display scoreboard for a few seconds
+        //return to lobby
+        if (!IsServer) return;
+        StartCoroutine(DisplayScoreBoardThenReturnToLobby(2f));
+    }
+
+    IEnumerator DisplayScoreBoardThenReturnToLobby(float displayTime)
+    {
+        WaitForSeconds waitForSec = new WaitForSeconds(displayTime);
+
+
+        //display scoreboard
+        yield return waitForSec;
+
+        Debug.Log("returning back to lobby");
+
+        NetworkManager.SceneManager.OnLoadEventCompleted -= SceneManager_OnLoadEventCompleted;
+
+        gameObject.GetComponent<NetworkObject>().Despawn();
+        Destroy(gameObject);
+
+        //somehow still goes through even though the gameobject is destroyed
+        SceneLoader.LoadNetwork(SceneLoader.Scene.WaitingRoom);
+
+    }
+
 
     private void SceneManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
@@ -100,139 +193,17 @@ public class GameManager : NetworkBehaviour
         InitializeRound(sceneName, loadSceneMode, clientsCompleted, clientsTimedOut);
     }
 
-    private void OnDisable()
-    {
-        if (!IsServer) return;
-        NetworkManager.SceneManager.OnLoadEventCompleted -= SceneManager_OnLoadEventCompleted;
-    }
-
-
-    private void Update()
-    {
-
-        if (!IsServer) return;
-
-
-    }
 
     private void InitializeRound(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        //when everyone is loaded
-        //spawn player object
-
-        //bind PlayerUI to player
-
+        Debug.Log("Initialize gamemanager");
         ImplementGameMode();
+        Debug.Log(gameObject.GetComponent<NetworkObject>().IsSpawned);
+        countDownTimer.Value = 3f;
+        roundTimer.Value = MapData.Instance.GetRoundTime();
 
-        //Set the round timer for server
-        //StartCoroutine(RoundTimerCountDownAsync());
-
-        //NO NEED, JUST MAKE IT NETWORK VARIABLE
-        //set the round timer for client
-        //CallRoundTimerCountDownClientRpc();
-
-
+        gameState.Value = GameStates.countDownToStart;
     }
-
-
-   
-        
-        
-
-        //client timedout show grey out icon
-        /*
-        for (int i = 0; i < playerObjectsArray.Length; i++)
-        {
-            if (playerObjectsArray[i] != null)
-            {
-                Debug.Log("player slot " + i + ": " + playerObjectsArray[i].ownerClientID.Value);
-            }
-            else
-            {
-                Debug.Log("player slot " + i + ": empty player slot");
-            }
-
-        }*/
-
-    
-    /*[ClientRpc]
-    private void CallRoundTimerCountDownClientRpc()
-    {
-        StartCoroutine(RoundTimerCountDownAsync());
-        //Enable player input
-    }
-    */
-
-    //logic for server, visual for client
-    /*
-    IEnumerator RoundTimerCountDownAsync()
-    {
-        SetRoundTimer(MapData.Instance.GetRoundTime());
-
-        yield return StartCoroutine(RoundStartCountDown()); ;
-
-        
-        while (roundTimer.Value > 0)
-        {
-            roundTimer.Value -= Time.deltaTime;
-            yield return null;
-        }
-
-
-
-        if (IsServer)
-        {
-            Debug.Log("RoundTimer Completed");
-            if(gameState.Value != GameStates.gameOver)
-            {
-                gameState.Value = GameStates.gameOver;
-                GameEnd();
-            }
-            
-        }
-    }
-
-    IEnumerator RoundStartCountDown()
-    {
-        yield return new WaitForSeconds(3);
-
-
-
-        if (IsServer)
-        {
-            Debug.Log("game has started");
-            gameState.Value = GameStates.gamePlaying;
-        }
-
-
-
-    }
-    */
-    //this happens only on server, acts as the true timer
-    private void SetRoundTimer(float roundTime)
-    {
-        roundTimer.Value = roundTime;
-        //SetClientRoundTimerClientRpc(roundTime);
-    }
-
-    //this happens only on all clients, acts as a visual time indicator
-    /*
-    [ClientRpc]
-    private void SetClientRoundTimerClientRpc(float roundTime)
-    {
-        roundTimer.Value = roundTime;
-    }
-    */
-
-    
-
-    
-    
-    //playerUI.CallBindPlayerUIToPlayer();
-
-
-
-    
 
 
     private void ImplementGameMode()
@@ -243,11 +214,11 @@ public class GameManager : NetworkBehaviour
         switch (GameModeData.Instance.gameModeName)
         {
             case "Elimination":
-                foreach(PlayerCharacter player in playerCharacterObjectsArray)
+                foreach(PlayerCharacter player in GameMultiplayer.Instance.playerCharacterList)
                 {
                     if(player != null)
                     {
-                        player.onEliminated += (object sender, EventArgs e) => { CheckIsWinConditionAchieved(); };
+                        player.onEliminated += CheckIsWinConditionAchieved;
                     }
                     
                 }
@@ -255,62 +226,60 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    private void CheckIsWinConditionAchieved()
+    private void CheckIsWinConditionAchieved(object sender, EventArgs e)
     {
         if (GameModeData.Instance.IsWinConditionAchieved())
         {
             gameState.Value = GameStates.gameOver;
-
-            GameEnd();
         }
     }
 
-    private void GameState_OnValueChanged(GameStates previousValue, GameStates newValue)
+
+
+    private void Update()
     {
+
+        if (!IsServer) return;
+        HandleTimer();
 
     }
 
-    //Not in use yet
-    private void onGameStateChange()
+    private void HandleTimer()
     {
-        switch (gameState.Value)
+        if(gameState.Value == GameStates.countDownToStart && countDownTimer.Value > 0)
         {
-            case GameStates.waitingToStart:
-                break;
-            case GameStates.gamePlaying:
-                break;
-            case GameStates.gamePaused:
-                break;
-            case GameStates.gameOver:
-                break;
+            countDownTimer.Value -= Time.deltaTime;
+            if(countDownTimer.Value <= 0)
+            {
+                gameState.Value = GameStates.gamePlaying;
+            }
         }
-    }
-
-    private void GameEnd()
-    {
-        roundTimer.Value = 0;
-        
-        Debug.Log("The Game has ended");
-
-        onGameEnded?.Invoke(this, EventArgs.Empty);
-
-        //GameMultiplayer.Instance.UpdatePlayerScoring();
-
-
-        //display scoreboard for a few seconds
-        //return to lobby
+        if (gameState.Value == GameStates.gamePlaying && roundTimer.Value > 0)
+        {
+            roundTimer.Value -= Time.deltaTime;
+            if(roundTimer.Value <= 0)
+            {
+                gameState.Value = GameStates.gameOver;
+            }
+        }
         
     }
 
     
 
-    
 
-
-    public PlayerCharacter[] GetPlayerObjArray()
+    public override void OnDestroy()
     {
-        return playerCharacterObjectsArray;
+        if (IsServer)
+        {
+            if (gameObject.GetComponent<NetworkObject>().IsSpawned == true)
+            {
+                gameObject.GetComponent<NetworkObject>().Despawn();
+            }
+
+        }
+
+        base.OnDestroy();
     }
-    
-    
+
 }

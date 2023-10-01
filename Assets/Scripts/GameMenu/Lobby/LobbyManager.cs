@@ -165,7 +165,7 @@ public class LobbyManager : MonoBehaviour
             }
         }catch(LobbyServiceException e)
         {
-            Debug.Log("poll for update error");
+            Debug.Log("poll for update error" + e);
         }
     }
 

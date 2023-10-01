@@ -97,15 +97,9 @@ public class PickUpObject : NetworkBehaviour
 
 
         //despawn after picked up
-        GetComponent<NetworkObject>().Despawn();
+        
         Destroy(gameObject);
     }
-
-
-
-
-
-
 
 
 
@@ -128,8 +122,13 @@ public class PickUpObject : NetworkBehaviour
     {
         if (IsServer)
         {
-            gameObject.GetComponent<NetworkObject>().Despawn();
+            if (gameObject.GetComponent<NetworkObject>().IsSpawned == true)
+            {
+                gameObject.GetComponent<NetworkObject>().Despawn();
+            }
+
         }
+
         base.OnDestroy();
     }
 }
