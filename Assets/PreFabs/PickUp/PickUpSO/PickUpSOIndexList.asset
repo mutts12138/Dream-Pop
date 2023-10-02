@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e754ec3e845a511408bd4b1e280d4f47, type: 3}
-  m_Name: New Pick Up SO List SO
+  m_Name: PickUpSOIndexList
   m_EditorClassIdentifier: 
   pickUpSOList:
   - {fileID: 11400000, guid: 145d8983b105148498a38bdd8d713734, type: 2}
