@@ -29,5 +29,10 @@ public abstract class PickUp
         //if not stackable, return it back to pick up pool?
 
     }
+
+    public int GetPickUpStacks()
+    {
+        return pickUpStacks;
+    }
     public abstract void ApplyEffect();
 }

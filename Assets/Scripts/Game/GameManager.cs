@@ -12,6 +12,7 @@ public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    private List<PickUpSO> pickUpPool = new List<PickUpSO>();
     public NetworkVariable<float> countDownTimer {  get; private set; }
     public NetworkVariable<float> roundTimer { get; private set; }
 
@@ -198,13 +199,14 @@ public class GameManager : NetworkBehaviour
     {
         Debug.Log("Initialize gamemanager");
         ImplementGameMode();
-        Debug.Log(gameObject.GetComponent<NetworkObject>().IsSpawned);
+        FillPickUpPool();
+        AssignPickUpToBlocks();
+
         countDownTimer.Value = 3f;
         roundTimer.Value = MapData.Instance.GetRoundTime();
 
         gameState.Value = GameStates.countDownToStart;
     }
-
 
     private void ImplementGameMode()
     {
@@ -223,6 +225,44 @@ public class GameManager : NetworkBehaviour
                     
                 }
                 break;
+        }
+    }
+
+    private void FillPickUpPool()
+    {
+        foreach(PickUpSO pickUpSO in MapData.Instance.GetPickUpPoolSO().pickUpSOList)
+        {
+            pickUpPool.Add(pickUpSO);
+        }
+    }
+
+    private void AssignPickUpToBlocks()
+    {
+        //pick random block from block list and assign a pick up until pool is empty
+        int blockCount = MapData.Instance.GetBlockObjectList().Count;
+
+
+        //could result in infinite loop if blockcount is less than pickup count
+        while(pickUpPool.Count > 0)
+        {
+            PickUpSO pickUpSO = pickUpPool[0];
+
+            //get a random block from the blocklist
+            BlockObject block = MapData.Instance.GetBlockObjectList()[UnityEngine.Random.Range(0, blockCount - 1)];
+
+            //if the block has pickupHolder, then it must be block_pickup
+            if (block.gameObject.TryGetComponent<PickUpHolder>(out PickUpHolder pickUpHolder))
+            {
+                //only assign it a pickup if it doesnt already hold one
+                if (pickUpHolder.GetPickUpsHeld().Count == 0)
+                {
+
+                    pickUpHolder.AddPickUpToInventory(pickUpSO.InitializePickUpEffect(pickUpHolder));
+
+                    pickUpPool.Remove(pickUpSO);
+                }
+            }
+
         }
     }
 

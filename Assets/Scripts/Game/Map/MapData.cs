@@ -6,6 +6,9 @@ public class MapData : MonoBehaviour
 {
     public static MapData Instance { get; private set; }
 
+
+    [SerializeField] private PickUpPoolSO pickUpPoolSO;
+    [SerializeField] private List<BlockObject> blockObjectList;
     [SerializeField] private List<SpawnPoint> spawnPoints = new List<SpawnPoint>();
 
     [SerializeField] private float roundTime;
@@ -24,6 +27,17 @@ public class MapData : MonoBehaviour
 
 
         Instance = this;
+    }
+
+
+    public PickUpPoolSO GetPickUpPoolSO() 
+    { 
+        return pickUpPoolSO; 
+    }
+
+    public List<BlockObject> GetBlockObjectList()
+    {
+        return blockObjectList;
     }
 
     public List<SpawnPoint> GetSpawnPoints()

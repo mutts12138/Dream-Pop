@@ -20,4 +20,9 @@ public class PickUpHolder : MonoBehaviour
             _pickUps[pickUp.pickUpSO].OnAddPickUp();
         }
     }
+
+    public Dictionary<PickUpSO,PickUp> GetPickUpsHeld()
+    {
+        return _pickUps;
+    }
 }

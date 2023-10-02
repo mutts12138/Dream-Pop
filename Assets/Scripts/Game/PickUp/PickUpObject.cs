@@ -53,21 +53,28 @@ public class PickUpObject : NetworkBehaviour
 
     IEnumerator collisionDetectionAsync(float newTickRate)
     {
+        WaitForSeconds iFrame = new WaitForSeconds(0.5f);
+        yield return iFrame;
+
+
+
         WaitForSeconds tickRate = new WaitForSeconds(newTickRate);
 
-        float overlapSphereRadius = 1f;
+        float overlapSphereRadius = 0.5f;
 
-        int layerNumber = 3;
+        int playerLayerNumber = 3;
+        int blockLayerNumber = 9;
         int layerMask;
-        layerMask = 1 << layerNumber;
+        layerMask = 1 << playerLayerNumber;
+        layerMask = layerMask | 1 << blockLayerNumber;
 
         while (enabled && IsServer && isPickedUp == false)
         {
-            Collider[] pickUpColliders = Physics.OverlapSphere(transform.position, overlapSphereRadius, layerMask);
+            Collider[] pickUpColliders = Physics.OverlapSphere(transform.position + Vector3.up, overlapSphereRadius, layerMask);
 
             foreach (Collider pickUpCollider in pickUpColliders)
             {
-                if(pickUpCollider.gameObject.TryGetComponent<PickUpHolder>(out PickUpHolder pickUpHolder)){
+                if(pickUpCollider.gameObject.TryGetComponent<PickUpHolder>(out PickUpHolder pickUpHolder) && isPickedUp == false){
 
                     PickUpHolderPickedUp(pickUpHolder);
                     isPickedUp = true;
