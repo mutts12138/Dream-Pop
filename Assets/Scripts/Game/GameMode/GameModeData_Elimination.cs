@@ -32,7 +32,7 @@ public class GameModeData_Elimination : GameModeData
         {
             if(playerObj != null)
             {
-                if (playerObj.isEliminated.Value == true)
+                if (playerObj.isDead.Value == true)
                 {
                     PlayersAliveCount_inEachTeam[playerObj.teamNumber.Value]++;
                 }
@@ -71,7 +71,7 @@ public class GameModeData_Elimination : GameModeData
         {
             if (playerObj != null)
             {
-                if (playerObj.isEliminated.Value == true)
+                if (playerObj.isDead.Value == true)
                 {
                     PlayersAliveCount_inEachTeam[playerObj.teamNumber.Value]++;
                 }

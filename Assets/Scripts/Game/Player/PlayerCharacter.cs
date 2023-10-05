@@ -13,9 +13,7 @@ using UnityEngine.UIElements;
 public class PlayerCharacter : NetworkBehaviour
 {
     //event
-    public event EventHandler<CharacterBaseStatLevelChangeEventArgs> onCharacterBaseStatLevelChange;
-    public event EventHandler onEliminated;
-
+    public event EventHandler<CharacterBaseStatLevelChangeEventArgs> OnCharacterBaseStatLevelChange;
     public class CharacterBaseStatLevelChangeEventArgs : EventArgs
     {
         public int newMoveSpeedLevel;
@@ -23,8 +21,13 @@ public class PlayerCharacter : NetworkBehaviour
         public int newBubbleCountLevel;
     }
 
+    public event EventHandler OnKill;
+    public event EventHandler OnDeath;
+    public event EventHandler OnSave;
+    public event EventHandler OnBeingSaved;
+    public event EventHandler OnRespawn;
 
-
+    
 
     //underscore the private variables.
     private GameInput gameInput;
@@ -32,7 +35,7 @@ public class PlayerCharacter : NetworkBehaviour
 
     //team
 
-    public NetworkVariable<ulong> ownerClientID { get; private set; }
+    public NetworkVariable<ulong> ownerClientId { get; private set; }
     public NetworkVariable<int> teamNumber { get; private set; }
 
     //set via map data
@@ -58,7 +61,7 @@ public class PlayerCharacter : NetworkBehaviour
     private int invincibleStack;
 
     public NetworkVariable<bool> isAsleep { get; private set; }
-    public NetworkVariable<bool> isEliminated { get; private set; }
+    public NetworkVariable<bool> isDead { get; private set; }
 
 
     
@@ -84,6 +87,8 @@ public class PlayerCharacter : NetworkBehaviour
     //resource in using abilities
     private int dreamFragCount;
     private int maxDreamFragCount;
+
+    
 
     //movement collision detection layermask
     LayerMask movementLayerMaskIgnore;
@@ -112,14 +117,14 @@ public class PlayerCharacter : NetworkBehaviour
 
     private void Awake()
     {
-        ownerClientID = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        ownerClientId = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         teamNumber = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-        isAsleep = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-        isEliminated = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        isAsleep = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        isDead = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         //currentPlayerState = new NetworkVariable<PlayerStates>(PlayerStates.normal, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-        currentLayer = new NetworkVariable<int>(3, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        currentLayer = new NetworkVariable<int>(3, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
 
         movementLayerMaskIgnore = LayerMask.GetMask("pickUp");
@@ -134,14 +139,14 @@ public class PlayerCharacter : NetworkBehaviour
 
 
         //event subscribe
-        currentLayer.OnValueChanged += (int previousLayer, int newLayer) => { ChangeLayer(currentLayer.Value); };
+        currentLayer.OnValueChanged += ChangeLayer;
 
         //if owner
         if (!IsOwner) return;
 
         //ownerClientID.Value = NetworkManager.Singleton.LocalClientId;
         //connect game manager
-
+        
         //connect input 
         gameInput = FindObjectOfType<GameInput>();
 
@@ -160,13 +165,7 @@ public class PlayerCharacter : NetworkBehaviour
 
      private void OnDisable()
     {
-        currentLayer.OnValueChanged -= (int previousLayer, int newLayer) => { ChangeLayer(currentLayer.Value); };
-
-
-        if (gameInput != null)
-        {
-            gameInput.OnPlaceBubble -= GameInput_OnPlaceBubble;
-        }
+        
         
         //currentPlayerState.OnValueChanged -= (PlayerStates previousState, PlayerStates newState) => { ApplyPlayerState(); };
     }
@@ -351,6 +350,7 @@ public class PlayerCharacter : NetworkBehaviour
 
         if (currentBubbleCount < currentBubbleCountLevel)
         {
+            Debug.Log(currentBubblePowerLevel);
             PlaceDreamBubbleServerRpc(currentBubblePowerLevel);
         }
 
@@ -374,7 +374,7 @@ public class PlayerCharacter : NetworkBehaviour
         {
             
             //GameMultiplayer.Instance.SpawnDreamBubbleObject();
-            SpawnDreamBubbleObject(dreamBubbleLocation);
+            SpawnDreamBubbleObject(dreamBubbleLocation, bubblePowerLevel);
             ChangeBubbleCountClientRpc(1);
         }
 
@@ -384,7 +384,7 @@ public class PlayerCharacter : NetworkBehaviour
         */
     }
 
-    private void SpawnDreamBubbleObject(Vector3 spawnPosition)
+    private void SpawnDreamBubbleObject(Vector3 spawnPosition, int bubblePowerLevel)
     {
         DreamBubble dreamBubbleTransform = Instantiate(dreamBubble);
         dreamBubbleTransform.transform.position = spawnPosition;
@@ -394,7 +394,7 @@ public class PlayerCharacter : NetworkBehaviour
         
 
         dreamBubbleTransform.SetPlayer(this);
-        dreamBubbleTransform.SetPopPowerDistance(currentBubblePowerLevel);
+        dreamBubbleTransform.SetPopPowerDistance(bubblePowerLevel);
     }
 
     [ClientRpc]
@@ -488,141 +488,20 @@ public class PlayerCharacter : NetworkBehaviour
         Mathf.Clamp(currentBubblePowerLevel, 0, maxBubblePowerLevel);
 
         //updates UI
-        onCharacterBaseStatLevelChange?.Invoke(this, new CharacterBaseStatLevelChangeEventArgs { newBubbleCountLevel = currentBubbleCountLevel, newMoveSpeedLevel = currentMoveSpeedLevel, newBubblePowerLevel = currentBubblePowerLevel });
+        OnCharacterBaseStatLevelChange?.Invoke(this, new CharacterBaseStatLevelChangeEventArgs { newBubbleCountLevel = currentBubbleCountLevel, newMoveSpeedLevel = currentMoveSpeedLevel, newBubblePowerLevel = currentBubblePowerLevel });
     }
 
-    
-
-    /*
-    private void HandleAsleep()
-    {
-
-        //check collision for enemy or ally
-        
-        asleepTimer -= Time.deltaTime;
-
-        if (asleepTimer < 0)
-        {
-            SetCurrentPlayerState(PlayerStates.normal);
-        }
-        else
-        {
-            CheckAsleepCollision();
-        }
-        
-            
-        
-    }
-
-    
-    
-        
-    }*/
-
-
-
-
-    private void Respawn()
-    {
-        //ChangeToNormalState();
-        Debug.Log("respawn");
-    }
-
-
-
-
-    /*
-    private void ApplyPlayerState()
-    {
-        switch (currentPlayerState.Value)
-        {
-            case PlayerStates.normal:
-                ChangeToNormalState();
-                
-                break;
-            case PlayerStates.asleep:
-                ChangeToAsleepState();
-                
-                break;
-            case PlayerStates.death:
-                ChangeToDeathState();
-                
-                break;
-        }
-    }
-
-    private void ChangeToNormalState()
-    {
-        //"player" = 3
-        //ChangeLayer(3);
-        currentLayer.Value = 3;
-
-        canMove = true;
-        //canJump = true;
-        canUseAbility = true;
-        canUseItem = true;
-        canPlaceDB = false;
-
-        Collider m_Collider = GetComponent<Collider>();
-        m_Collider.enabled = true;
-    }
-
-    //make it into a debuff
-    private void ChangeToAsleepState()
-    {
-        //"playerAsleep" = 7
-        //ChangeLayer(7);
-        currentLayer.Value = 7;
-
-        canMove = false;
-        //canJump = false;
-        canUseAbility = false;
-        canUseItem = false;
-        canPlaceDB = false;
-
-        asleepTimer = asleepTimeBase;
-
-    }
-
-    //make it into a debuff
-    private void ChangeToDeathState()
-    {
-        //"playerDead" = 8
-        //ChangeLayer(8);
-        currentLayer.Value = 8;
-
-        
-
-        canMove = false;
-        //canJump = false;
-        canUseAbility = false;
-        canUseItem = false;
-        canPlaceDB = false;
-
-        //remove buffs and debuffs
-
-        Collider m_Collider = GetComponent<Collider>();
-        m_Collider.enabled = false;
-
-
-        if(canRespawn == true)
-        {
-            //trigger respawn timmer
-        }
-
-    }
-    */
-
+    //make sure only the server calls this
     public void SetCurrentLayer(int newLayer)
     {
         currentLayer.Value = newLayer;
     }
 
     //subscribed to currentlayer.valuechange
-    public void ChangeLayer(int layerNumber)
+    public void ChangeLayer(int previousLayerNumber, int newLayerNumber)
     {
 
-        gameObject.layer = LayerMask.NameToLayer(layersList[layerNumber]);
+        gameObject.layer = LayerMask.NameToLayer(layersList[newLayerNumber]);
         Debug.Log("playerObject on layer" + gameObject.layer);
     }
 
@@ -636,7 +515,7 @@ public class PlayerCharacter : NetworkBehaviour
 
     public void SetOwnerClientId(ulong clientID)
     {
-        this.ownerClientID.Value = clientID;
+        this.ownerClientId.Value = clientID;
     }
 
 
@@ -691,47 +570,75 @@ public class PlayerCharacter : NetworkBehaviour
         return invincibleStack;
     }
 
-    private bool GetIsEliminated()
-    {
-        return isEliminated.Value;
-    }
 
-    public void AddToMoveDisableStack(int deltaValue)
+    [ClientRpc]
+    public void AddToMoveDisableStackClientRpc(int deltaValue)
     {
         moveDisableStack += deltaValue;
     }
-    public void AddToPlaceDreamBubbleDisableStack(int deltaValue)
+    [ClientRpc]
+    public void AddToPlaceDreamBubbleDisableStackClientRpc(int deltaValue)
     {
         placeDreamBubbleDisableStack += deltaValue;
     }
-    public void AddToUseAbilityDisableStack(int deltaValue)
+    [ClientRpc]
+    public void AddToUseAbilityDisableStackClientRpc(int deltaValue)
     {
         useAbilityDisableStack += deltaValue;
     }
-    public void AddToUseItemDisableStack(int deltaValue)
+    [ClientRpc]
+    public void AddToUseItemDisableStackClientRpc(int deltaValue)
     {
         useItemDisableStack += deltaValue;
     }
-
-    public void AddToInvincibleStack(int deltaValue)
+    [ClientRpc]
+    public void AddToInvincibleStackClientRpc(int deltaValue)
     {
         invincibleStack += deltaValue;
     }
+
 
     public void SetIsAsleep(bool deltaValue)
     {
         isAsleep.Value = deltaValue;
     }
 
-    public void SetIsEliminated(bool deltaValue)
+
+
+
+    public void InvokeKill()
     {
-        isEliminated.Value = deltaValue;
-        if(deltaValue )
-        {
-            onEliminated?.Invoke(this, EventArgs.Empty);
-        }
+        OnKill?.Invoke(this, EventArgs.Empty);
     }
+
+    public void InvokeDeath()
+    {
+        isDead.Value = true;
+
+        OnDeath?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void InvokeRespawn()
+    {
+        isDead.Value = false;
+
+        OnRespawn?.Invoke(this, EventArgs.Empty);
+        Debug.Log("respawn");
+    }
+
+    public void InvokeSave()
+    {
+        OnSave?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void InvokeBeingSaved()
+    {
+        OnBeingSaved?.Invoke(this, EventArgs.Empty);
+    }
+
+
     
+
     /*
     public PlayerStates GetCurrentPlayerState()
     {
@@ -762,7 +669,14 @@ public class PlayerCharacter : NetworkBehaviour
 
     public override void OnDestroy()
     {
-        
+        if (gameInput != null)
+        {
+            gameInput.OnPlaceBubble -= GameInput_OnPlaceBubble;
+        }
+
+        currentLayer.OnValueChanged -= ChangeLayer;
+
+
         if (IsServer)
         {
             if ( gameObject.GetComponent<NetworkObject>().IsSpawned == true ) 

@@ -18,6 +18,9 @@ public class GameManager : NetworkBehaviour
 
     private NetworkVariable<GameStates> gameState;
 
+
+    public event EventHandler OnPlayerCharacterSpawned;
+
     public event EventHandler OnWaitingToStart;
     public event EventHandler OnCountDownToStart;
     public event EventHandler OnGamePlaying;
@@ -105,16 +108,11 @@ public class GameManager : NetworkBehaviour
         OnGameOver += GameManager_OnGameOver;
 
         if (!IsServer) return;
-
+        GameMultiplayer.Instance.OnLoadingPlayersComplete += GameMultiplayer_OnLoadingPlayersComplete;
 
     }
     public override void OnNetworkSpawn()
     {
-
-        
-
-        DontDestroyOnLoad(gameObject);
-
 
         //initialize players
 
@@ -122,13 +120,12 @@ public class GameManager : NetworkBehaviour
 
 
         if (!IsServer) return;
-
-        NetworkManager.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
         
 
     }
 
     
+
     private void GameManager_OnWaitingToStart(object sender, EventArgs e)
     {
         Debug.Log("waiting to start");
@@ -163,7 +160,7 @@ public class GameManager : NetworkBehaviour
         //display scoreboard for a few seconds
         //return to lobby
         if (!IsServer) return;
-        StartCoroutine(DisplayScoreBoardThenReturnToLobby(2f));
+        StartCoroutine(DisplayScoreBoardThenReturnToLobby(10f));
     }
 
     IEnumerator DisplayScoreBoardThenReturnToLobby(float displayTime)
@@ -176,7 +173,7 @@ public class GameManager : NetworkBehaviour
 
         Debug.Log("returning back to lobby");
 
-        NetworkManager.SceneManager.OnLoadEventCompleted -= SceneManager_OnLoadEventCompleted;
+        GameMultiplayer.Instance.OnLoadingPlayersComplete -= GameMultiplayer_OnLoadingPlayersComplete;
 
         gameObject.GetComponent<NetworkObject>().Despawn();
         Destroy(gameObject);
@@ -186,16 +183,17 @@ public class GameManager : NetworkBehaviour
 
     }
 
-
-    private void SceneManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    private void GameMultiplayer_OnLoadingPlayersComplete(object sender, EventArgs e)
     {
-        //actually get if waitroom or gamemap from MAPDATA
-        if (sceneName == "WaitingRoom") return;
-        InitializeRound(sceneName, loadSceneMode, clientsCompleted, clientsTimedOut);
+        //initialize need to happen after the playercharacters have been created
+        InitializeRound();
     }
 
+   
+    
 
-    private void InitializeRound(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+
+    private void InitializeRound()
     {
         Debug.Log("Initialize gamemanager");
         ImplementGameMode();
@@ -220,7 +218,7 @@ public class GameManager : NetworkBehaviour
                 {
                     if(player != null)
                     {
-                        player.onEliminated += CheckIsWinConditionAchieved;
+                        player.OnDeath += CheckIsWinConditionAchieved;
                     }
                     
                 }
@@ -270,10 +268,14 @@ public class GameManager : NetworkBehaviour
     {
         if (GameModeData.Instance.IsWinConditionAchieved())
         {
-            gameState.Value = GameStates.gameOver;
+            Invoke(nameof(InvokeGameOver), 1);
         }
     }
 
+    private void InvokeGameOver()
+    {
+        gameState.Value = GameStates.gameOver;
+    }
 
 
     private void Update()

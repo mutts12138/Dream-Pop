@@ -46,7 +46,7 @@ public class PlayerInGameUI : MonoBehaviour
         BindPlayerUIToLocalClientPlayerObjectBTN.onClick.RemoveAllListeners();
         if (player != null )
         {
-            player.onCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
+            player.OnCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
         }
         
         
@@ -58,7 +58,7 @@ public class PlayerInGameUI : MonoBehaviour
     {
         if(player  != null)
         {
-            player.onCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
+            player.OnCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
 
         }
         player = newPlayer;
@@ -70,7 +70,7 @@ public class PlayerInGameUI : MonoBehaviour
         //if paramater is null bind to local player
         if (player != null)
         {
-            player.onCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
+            player.OnCharacterBaseStatLevelChange -= (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
         }
 
         player = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject().GetComponent<PlayerCharacter>();
@@ -84,7 +84,7 @@ public class PlayerInGameUI : MonoBehaviour
 
 
         //Debug.Log(player);
-        player.onCharacterBaseStatLevelChange += (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
+        player.OnCharacterBaseStatLevelChange += (object sender, CharacterBaseStatLevelChangeEventArgs e) => { UpdateCharacterBaseStatLevelDisplay(e.newBubbleCountLevel, e.newBubblePowerLevel, e.newMoveSpeedLevel); };
 
         player.CallChangeCharacterBaseStatLevelsServerRpc(0, 0, 0);
     }

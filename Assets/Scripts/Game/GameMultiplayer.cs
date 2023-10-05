@@ -26,6 +26,9 @@ public class GameMultiplayer : NetworkBehaviour
     private NetworkList<PlayerData> PlayerDataNetworkList;
     public event EventHandler OnPlayerDataNetworkListChanged;
 
+    public event EventHandler OnLoadingPlayersComplete;
+
+
     //playercharacter cant be serialized across network, so only server keep a copy
     public List<PlayerCharacter> playerCharacterList { get; private set; }
 
@@ -63,9 +66,13 @@ public class GameMultiplayer : NetworkBehaviour
 
     private void SceneManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        
+        ClearAllPlayerDataCurrentScore();
+        SaveAllPlayerDataToLocal();
+
         playerCharacterList = new List<PlayerCharacter>();
         SpawnAllPlayerObject();
+
+        OnLoadingPlayersComplete?.Invoke(this, EventArgs.Empty);
     }
 
     public override void OnNetworkSpawn()
@@ -97,16 +104,11 @@ public class GameMultiplayer : NetworkBehaviour
         
         if (!IsServer) return;
         AddNewPlayerToPlayerConnectedListClientRpc(clientId);
-        playerCharacterList.Add(SpawnPlayerObject(clientId));
-        testClientMessageClientRpc();
 
+        
     }
 
-    [Command][ClientRpc]
-    private void testClientMessageClientRpc()
-    {
-        Debug.Log("gameMultiplayer exists, and message is sent here");
-    }
+    
 
     private void NetworkManager_OnClientDisconnectedCallback(ulong clientID)
     {
@@ -137,7 +139,7 @@ public class GameMultiplayer : NetworkBehaviour
     {
         if(NetworkManager.Singleton.LocalClientId == clientId)
         {
-            AddNewPlayerToPlayerConnectedListServerRpc(clientId, LocalPlayerData.Instance.GetLocalPlayerDataAssignNewClientIdClientRPC(clientId));
+            AddNewPlayerToPlayerConnectedListServerRpc(clientId, LocalPlayerData.Instance.GetLocalPlayerDataAssignNewClientId(clientId));
         }
 
     }
@@ -153,7 +155,7 @@ public class GameMultiplayer : NetworkBehaviour
         PlayerDataNetworkList.Add(playerData);
 
         //spawn the playercharacter object
-        
+        playerCharacterList.Add(SpawnPlayerObject(playerData));
     }
 
 
@@ -179,45 +181,81 @@ public class GameMultiplayer : NetworkBehaviour
         }
     }
 
-
-
-
-
     public NetworkList<PlayerData> GetPlayerDataNetworkList()
     {
         return PlayerDataNetworkList;
     }
 
-
-
-
-    public void UpdatePlayerScoring(ulong clientId, int isWin)
+    public PlayerData GetPlayerDataFromClientId(ulong clientId)
     {
-
         for (int i = 0; i < PlayerDataNetworkList.Count; i++)
         {
             if (PlayerDataNetworkList[i].clientId == clientId)
             {
-                PlayerData playerData = PlayerDataNetworkList[i];
-                switch (isWin)
-                {
-                    case -1:
-                        playerData.loseCount++;
-                        break;
-                    case 0:
-                        playerData.drawCount++;
-                        break;
-                    case 1:
-                        playerData.winCount++;
-                        break;
+                return PlayerDataNetworkList[i];
+            }
+        }
 
-                }
-                
-                PlayerDataNetworkList[i] = playerData;
+        return new PlayerData("Null");
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void SetPlayerCurrentTeamNumberServerRpc(ulong clientId, int newTeamNumber)
+    {
+        PlayerData playerData = PlayerDataNetworkList[0];
+
+        playerData.currentTeamNumber = newTeamNumber;
+
+        UpdatePlayerData(playerData);
+    }
+
+    
+
+    public void UpdatePlayerData(PlayerData newPlayerData)
+    {
+
+        for (int i = 0; i < PlayerDataNetworkList.Count; i++)
+        {
+            if (PlayerDataNetworkList[i].clientId == newPlayerData.clientId)
+            {
+                PlayerDataNetworkList[i] = newPlayerData;
                 break;
             }
         }
     }
+
+
+    private void SaveAllPlayerDataToLocal()
+    {
+        foreach (PlayerData playerData in PlayerDataNetworkList)
+        {
+            SavePlayerDataToLocalClientRPC(playerData);
+        }
+    }
+
+    [ClientRpc]
+    private void SavePlayerDataToLocalClientRPC(PlayerData playerData)
+    {
+        if(playerData.clientId == LocalPlayerData.Instance.localPlayerData.clientId)
+        {
+            LocalPlayerData.Instance.localPlayerData = playerData;
+        }
+    }
+
+    private void ClearAllPlayerDataCurrentScore()
+    {
+        foreach(PlayerData playerData in PlayerDataNetworkList)
+        {
+            playerData.ClearCurrentScore();
+            UpdatePlayerData(playerData);
+        }
+    }
+
+
+
+
+
+    
 
 
     //called when after loading a scene is complete
@@ -228,7 +266,7 @@ public class GameMultiplayer : NetworkBehaviour
         foreach (PlayerData playerData in PlayerDataNetworkList)
         {
             //Debug.Log(playerData.clientID);
-            playerCharacterList.Add(SpawnPlayerObject(playerData.clientId));
+            playerCharacterList.Add(SpawnPlayerObject(playerData));
             count++;
         }
     }
@@ -236,21 +274,21 @@ public class GameMultiplayer : NetworkBehaviour
   
 
 
-    public PlayerCharacter SpawnPlayerObject(ulong clientId)
+    public PlayerCharacter SpawnPlayerObject(PlayerData playerData)
     {
 
 
-        PlayerCharacter playerObj = Instantiate(playerPreFab);
+        PlayerCharacter playerCharacter = Instantiate(playerPreFab);
 
         //if (NetworkManager.LocalClientId != clientID) return;
 
-        playerObj.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
+        playerCharacter.GetComponent<NetworkObject>().SpawnAsPlayerObject(playerData.clientId, true);
 
-        playerObj.SetOwnerClientId(clientId);
+        playerCharacter.SetOwnerClientId(playerData.clientId);
 
-        playerObj.SetTeamNumber(1);
+        playerCharacter.SetTeamNumber(playerData.currentTeamNumber);
 
-        return playerObj;
+        return playerCharacter;
         //Debug.Log(teamNumber);
 
         //playerObj.GetComponent<NetworkObject>().Spawn(true);
@@ -258,6 +296,9 @@ public class GameMultiplayer : NetworkBehaviour
         //Debug.Log(NetworkManager.Singleton.ConnectedClients[NetworkManager.Singleton.LocalClientId].PlayerObject);
 
     }
+
+    
+
 
     //get dreambubbleSO (define in dreambubbleSOList as a scriptable object), player object
 

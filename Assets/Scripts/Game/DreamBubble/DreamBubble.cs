@@ -195,8 +195,7 @@ public class DreamBubble : NetworkBehaviour, ActivateByDreamPop
 
     private float[] CalculateExplosionRanges()
     {
-        float[] explosionRanges;
-        //BUG: sometimes not destroying the block
+        float[] explosionRanges; 
         
         gravityScale = 0;
         Vector3 offsetTransformPosition = new Vector3(transform.position.x, transform.position.y + 1f, transform.position.z);
@@ -210,10 +209,10 @@ public class DreamBubble : NetworkBehaviour, ActivateByDreamPop
 
         Ray[] ray4Directions = { rayUp, rayDown, rayLeft, rayRight, rayTop, rayBelow};
 
-        int layerNumber = 6;
-        int layer2Number = 9;
-        int layerMask1 = 1 << layerNumber;
-        int layerMask2 = 1 << layer2Number;
+        int DBLayerNumber = 6;
+        int BlockLayer2Number = 9;
+        int layerMask1 = 1 << DBLayerNumber;
+        int layerMask2 = 1 << BlockLayer2Number;
         int finalMask = layerMask1 | layerMask2;
 
 
@@ -323,7 +322,7 @@ public class DreamBubble : NetworkBehaviour, ActivateByDreamPop
                         if (!(playerHitted.GetInvincibleStack() > 0)) {
                             //Apply effect
                             //asleep put as a debuff
-                            AddBuffToPlayerHitClientRpc(playerHitted.ownerClientID.Value);
+                            AddBuffToPlayerHit(playerHitted);
                             Debug.Log("player hit, apply asleep debuff");
                         }
                         
@@ -340,7 +339,7 @@ public class DreamBubble : NetworkBehaviour, ActivateByDreamPop
             yield return waitForSeconds;
         }
 
-        Debug.Log("Restore bubblecount to: " + player.ownerClientID.Value);
+        Debug.Log("Restore bubblecount to: " + player.ownerClientId.Value);
         player.ChangeBubbleCountClientRpc(-1);
 
 
@@ -350,13 +349,11 @@ public class DreamBubble : NetworkBehaviour, ActivateByDreamPop
         Destroy(gameObject);
     }
 
-    [ClientRpc]
-    public void AddBuffToPlayerHitClientRpc(ulong clientID)
+    
+    public void AddBuffToPlayerHit(PlayerCharacter playerCharacter)
     {
-        if (NetworkManager.Singleton.LocalClientId != clientID) return;
 
-
-        BuffHolder buffHolder = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject().GetComponent<BuffHolder>();
+        BuffHolder buffHolder = playerCharacter.GetComponent<BuffHolder>();
         Debug.Log("buffholder == " + buffHolder);
         buffHolder.AddBuff(buffSO.InitializeBuff(buffHolder));
     }

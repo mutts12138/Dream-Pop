@@ -50,19 +50,15 @@ public class LocalPlayerData : MonoBehaviour
     {
         Debug.Log("PlayerId: " + localPlayerData.playerId);
         Debug.Log("ClientId: " + localPlayerData.clientId);
-        Debug.Log("wins: " + localPlayerData.winCount);
-        Debug.Log("draws: " + localPlayerData.drawCount);
-        Debug.Log("loses: " + localPlayerData.loseCount);
+        Debug.Log("kills: " + localPlayerData.totalKillCount);
+        Debug.Log("deaths: " + localPlayerData.totalDeathCount);
+        Debug.Log("saves: " + localPlayerData.totalSaveCount);
     }
 
-    [ClientRpc]
-    public PlayerData GetLocalPlayerDataClientRPC()
-    {
-        return localPlayerData;
-    }
 
-    [ClientRpc]
-    public PlayerData GetLocalPlayerDataAssignNewClientIdClientRPC(ulong newClientId)
+
+    
+    public PlayerData GetLocalPlayerDataAssignNewClientId(ulong newClientId)
     {
         UpdateClientId(newClientId);
         return localPlayerData;
