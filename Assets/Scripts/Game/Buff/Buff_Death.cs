@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Buff_Eliminated : Buff
+public class Buff_Death : Buff
 {
     private readonly PlayerCharacter player;
 
-    public Buff_Eliminated(BuffSO buffSO, BuffHolder buffHolder) : base(buffSO, buffHolder)
+    public Buff_Death(BuffSO buffSO, BuffHolder buffHolder) : base(buffSO, buffHolder)
     {
         player = buffHolder.GetComponent<PlayerCharacter>();
         Debug.Log(player);
@@ -16,14 +16,14 @@ public class Buff_Eliminated : Buff
     {
         
 
-        player.AddToMoveDisableStack(1);
-        player.AddToPlaceDreamBubbleDisableStack(1);
-        player.AddToUseAbilityDisableStack(1);
-        player.AddToUseItemDisableStack(1);
+        player.AddToMoveDisableStackClientRpc(1);
+        player.AddToPlaceDreamBubbleDisableStackClientRpc(1);
+        player.AddToUseAbilityDisableStackClientRpc(1);
+        player.AddToUseItemDisableStackClientRpc(1);
 
         //remove all removable buff/debuff
         //drop items/power ups if enabled
-        player.SetIsEliminated(true);
+        player.InvokeDeath();
         //change player layer to eliminated: 8, no need to disable collider since layer changed
         player.SetCurrentLayer(8);
         
@@ -38,11 +38,11 @@ public class Buff_Eliminated : Buff
         //Need to make this server sided when necessary
 
 
-        player.AddToMoveDisableStack(-1);
-        player.AddToPlaceDreamBubbleDisableStack(-1);
-        player.AddToUseAbilityDisableStack(-1);
-        player.AddToUseItemDisableStack(-1);
-        player.SetIsEliminated(false);
+        player.AddToMoveDisableStackClientRpc(-1);
+        player.AddToPlaceDreamBubbleDisableStackClientRpc(-1);
+        player.AddToUseAbilityDisableStackClientRpc(-1);
+        player.AddToUseItemDisableStackClientRpc(-1);
+        player.InvokeRespawn();
         //change layer back to player: 3
         player.SetCurrentLayer(3);
 

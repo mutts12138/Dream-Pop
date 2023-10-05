@@ -40,12 +40,14 @@ public class WaitingRoomUI : MonoBehaviour
 
         team1BTN.onClick.AddListener(() =>
         {
-            SetPlayerTeamNumberServerRpc(1);
+            GameMultiplayer.Instance.SetPlayerCurrentTeamNumberServerRpc(LocalPlayerData.Instance.localPlayerData.clientId, 1);
+            UpdateDisplayPlayers();
         });
 
         team2BTN.onClick.AddListener(() =>
         {
-            SetPlayerTeamNumberServerRpc(2);
+            GameMultiplayer.Instance.SetPlayerCurrentTeamNumberServerRpc(LocalPlayerData.Instance.localPlayerData.clientId, 2);
+            UpdateDisplayPlayers();
         });
 
         
@@ -83,28 +85,28 @@ public class WaitingRoomUI : MonoBehaviour
             switch (index)
             {
                 case 0:
-                    player1Text.text = player.name.ToString();
+                    player1Text.text = player.name.ToString() + " Team: " + player.currentTeamNumber + " " + player.totalKillCount + "/" + player.totalDeathCount + "/" + player.totalSaveCount;
                     break;
                 case 1:
-                    player2Text.text = player.name.ToString();
+                    player2Text.text = player.name.ToString() + " Team: " + player.currentTeamNumber + " " + player.totalKillCount + "/" + player.totalDeathCount + "/" + player.totalSaveCount;
                     break;
                 case 2:
-                    player3Text.text = player.name.ToString();
+                    player3Text.text = player.name.ToString() + " Team: " + player.currentTeamNumber + " " + player.totalKillCount + "/" + player.totalDeathCount + "/" + player.totalSaveCount;
                     break;
                 case 3:
-                    player4Text.text = player.name.ToString();
+                    player4Text.text = player.name.ToString() + " Team: " + player.currentTeamNumber + " " + player.totalKillCount + "/" + player.totalDeathCount + "/" + player.totalSaveCount;
                     break;
                 case 4:
-                    player5Text.text = player.name.ToString();
+                    player5Text.text = player.name.ToString() + " Team: " + player.currentTeamNumber + " " + player.totalKillCount + "/" + player.totalDeathCount + "/" + player.totalSaveCount;
                     break;
                 case 5:
-                    player6Text.text = player.name.ToString();
+                    player6Text.text = player.name.ToString() + " Team: " + player.currentTeamNumber + " " + player.totalKillCount + "/" + player.totalDeathCount + "/" + player.totalSaveCount;
                     break;
                 case 6:
-                    player7Text.text = player.name.ToString();
+                    player7Text.text = player.name.ToString() + " Team: " + player.currentTeamNumber + " " + player.totalKillCount + "/" + player.totalDeathCount + "/" + player.totalSaveCount;
                     break;
                 case 7:
-                    player8Text.text = player.name.ToString();
+                    player8Text.text = player.name.ToString() + " Team: " + player.currentTeamNumber + " " + player.totalKillCount + "/" + player.totalDeathCount + "/" + player.totalSaveCount;
                     break;
                 
             }
@@ -113,19 +115,6 @@ public class WaitingRoomUI : MonoBehaviour
         
             
     }
-
-    private void SetPlayerTeamNumberServerRpc(int teamNumber)
-    {
-        PlayerCharacter player = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject().GetComponent<PlayerCharacter>();
-        if (player == null)
-        {
-            Debug.Log("cant set team Number, player is null");
-            return;
-        }
-
-        player.SetTeamNumberServerRpc(teamNumber);
-    }
-    
 
     //listen to events from start
     private void Show()

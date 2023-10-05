@@ -14,7 +14,7 @@ public class PlayerAnimator : NetworkBehaviour
     //animator parameters
     private const string IS_RUNNING = "isRunning";
     private const string IS_ASLEEP = "isAsleep";
-    private const string IS_ELIMINATED = "isEliminated";
+    private const string IS_Dead = "isEliminated";
 
     private void Awake()
     {
@@ -32,7 +32,7 @@ public class PlayerAnimator : NetworkBehaviour
         if (!IsOwner) return;
         animator.SetBool(IS_RUNNING, player.isMoving);
         animator.SetBool(IS_ASLEEP, player.isAsleep.Value);
-        animator.SetBool(IS_ELIMINATED, player.isEliminated.Value);
+        animator.SetBool(IS_Dead, player.isDead.Value);
         //animator.
         //animator.SetBool(IS_ASLEEP, player.GetCurrentPlayerState() == Player.PlayerStates.asleep);
         //animator.SetBool(IS_DEAD, player.GetCurrentPlayerState() == Player.PlayerStates.death);

@@ -77,6 +77,7 @@ public class AuthenticationManager : MonoBehaviour
 
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
 
+
             OnAuthenticationSuccess?.Invoke(this, EventArgs.Empty);
 
             //set the localplayerdata

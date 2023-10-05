@@ -17,4 +17,4 @@ MonoBehaviour:
   duration: 6
   isDurationStacked: 0
   isEffectStacked: 0
-  buffSO_Eliminated: {fileID: 11400000, guid: 8e82b4bf0a960914e96e128b4efc1504, type: 2}
+  buffSO_Death: {fileID: 11400000, guid: a255779c685b5be45b39977f6b8b06dc, type: 2}
