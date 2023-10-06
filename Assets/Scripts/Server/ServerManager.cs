@@ -73,8 +73,8 @@ public class ServerManager : MonoBehaviour
             string relayJoinCode = await GetRelayJoinCode(allocation);
 
             //its gonna update anyway by LobbyPollUpdate, so OnCreateServerSuccess does not need
-
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(new RelayServerData(allocation, "dtls"));
+            
+            NetworkManager.Singleton.gameObject.GetComponent<UnityTransport>().SetRelayServerData(new RelayServerData(allocation, "dtls"));
             //ServerManager.Instance.StartHost();
             //Pass in the connection data to lobby data
             LobbyManager.Instance.UpdateRelayServerCode(relayJoinCode);
@@ -272,7 +272,7 @@ public class ServerManager : MonoBehaviour
     private void NetworkManager_OnServerStopped(bool obj)
     {
         NetworkManager.Singleton.OnServerStopped -= NetworkManager_OnServerStopped;
-
+        
         //if leave button is pressed
         if (IsVoluntaryDisconnect)
         {
@@ -294,7 +294,7 @@ public class ServerManager : MonoBehaviour
     private void NetworkManager_OnClientStopped(bool obj)
     {
         NetworkManager.Singleton.OnClientStopped -= NetworkManager_OnClientStopped;
-
+        
         //if leave button is pressed
         if ( IsVoluntaryDisconnect )
         {

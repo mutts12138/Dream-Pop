@@ -56,16 +56,21 @@ public class GameMultiplayer : NetworkBehaviour
     void Start()
     {
 
-        if (!IsServer) return;
+        
         NetworkManager.Singleton.OnClientConnectedCallback += (ulong clientID) => { NetworkManager_OnClientConnectedCallback(clientID); };
         NetworkManager.Singleton.OnClientDisconnectCallback += (ulong clientID) => { NetworkManager_OnClientDisconnectedCallback(clientID); };
 
         NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
+        
     }
 
 
     private void SceneManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
+        Debug.Log("fkfkfkfkfkkfkf");
+        if (!IsServer) return;
+        Debug.Log("GAME MANAGER STARTING SCENE");
+
         ClearAllPlayerDataCurrentScore();
         SaveAllPlayerDataToLocal();
 
@@ -202,11 +207,22 @@ public class GameMultiplayer : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void SetPlayerCurrentTeamNumberServerRpc(ulong clientId, int newTeamNumber)
     {
-        PlayerData playerData = PlayerDataNetworkList[0];
+        PlayerData playerData;
 
-        playerData.currentTeamNumber = newTeamNumber;
+        foreach (PlayerData playerData1 in PlayerDataNetworkList)
+        {
+            if (playerData1.clientId == clientId)
+            {
+                playerData = playerData1;
+                playerData.currentTeamNumber = newTeamNumber;
+                UpdatePlayerData(playerData);
+                return;
+            }
+        }
+        
+        
 
-        UpdatePlayerData(playerData);
+        
     }
 
     
@@ -287,6 +303,10 @@ public class GameMultiplayer : NetworkBehaviour
         playerCharacter.SetOwnerClientId(playerData.clientId);
 
         playerCharacter.SetTeamNumber(playerData.currentTeamNumber);
+
+        playerCharacter.SetSpawnPointFromMapData();
+
+        playerCharacter.SetPlayerPositionClientRpc(playerCharacter.spawnPosition);
 
         return playerCharacter;
         //Debug.Log(teamNumber);
@@ -378,6 +398,13 @@ public class GameMultiplayer : NetworkBehaviour
 
     public override void OnDestroy()
     {
+        /*
+        NetworkManager.Singleton.OnClientConnectedCallback -= (ulong clientID) => { NetworkManager_OnClientConnectedCallback(clientID); };
+        NetworkManager.Singleton.OnClientDisconnectCallback -= (ulong clientID) => { NetworkManager_OnClientDisconnectedCallback(clientID); };
+
+        NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= SceneManager_OnLoadEventCompleted;
+        */
+
         if (IsServer)
         {
             if (gameObject.GetComponent<NetworkObject>().IsSpawned == true)

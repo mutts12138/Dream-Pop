@@ -39,7 +39,11 @@ public class BlockObject : NetworkBehaviour, ActivateByDreamPop
     private void HandleGravity()
     {
         float gravity = gravityScale * Time.deltaTime;
-        if (!Physics.Raycast(new Vector3(transform.position.x, transform.position.y +0.1f, transform.position.z), Vector3.down,out RaycastHit raycastHit, 1f))
+
+        int pickUpLayerMask = 7;
+        int layerMask = 1 << pickUpLayerMask;
+
+        if (!Physics.Raycast(new Vector3(transform.position.x, transform.position.y +0.1f, transform.position.z), Vector3.down,out RaycastHit raycastHit, 1f, ~layerMask))
         {
             transform.position -= Vector3.down * gravity;
         }

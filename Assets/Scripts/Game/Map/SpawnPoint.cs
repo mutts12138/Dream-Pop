@@ -4,27 +4,24 @@ using UnityEngine;
 
 public class SpawnPoint : MonoBehaviour
 {
-    [SerializeField] private int teamNumber;
+    [SerializeField] private int groupNumber;
+    public int associatedTeamNumber { get; private set; }
 
-    private bool isTaken = false;
+    public bool isTaken = false;
 
-    public int GetTeamNumber()
+    public int GetGroupNumber()
     {
-        return teamNumber;
+        return groupNumber;
     }
 
-    public void SetTeamNumber(int newTeamNumber)
+    public void SetAssociatedTeamNumber(int teamNumber)
     {
-        teamNumber = newTeamNumber;
+        associatedTeamNumber = teamNumber;
     }
 
-    public bool GetIsTaken()
+    public Vector3 SetIsTakenAndReturnPosition()
     {
-        return isTaken;
-    }
-
-    public void SetIsTaken(bool newIsTaken)
-    {
-        isTaken = newIsTaken;
+        isTaken = true;
+        return transform.position;
     }
 }

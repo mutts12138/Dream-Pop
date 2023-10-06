@@ -5,22 +5,24 @@ using UnityEngine;
 
 public class LobbyCleanUp : MonoBehaviour
 {
+    [SerializeField] Transform networkManagerPrefab;
+
     private void Awake()
     {
-        
+
         if (WaitingRoomManager.Instance != null)
         {
             Destroy(WaitingRoomManager.Instance.gameObject);
         }
-        
+
         if (GameManager.Instance != null)
         {
             Destroy(GameManager.Instance.gameObject);
         } 
-        /*
+        
         if(GameMultiplayer.Instance != null)
         {
             Destroy(GameMultiplayer.Instance.gameObject);
-        }*/
+        }
     }
 }

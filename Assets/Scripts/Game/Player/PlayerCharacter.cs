@@ -172,14 +172,16 @@ public class PlayerCharacter : NetworkBehaviour
 
     private void SetInitialStats()
     {
+        //stats spawn points client based
+
         //set character and abilities
-        baseMoveSpeed = 5f;
+        baseMoveSpeed = 2f;
         //set initial max stats : movementspeed,bubble count, bubble power
         maxBubbleCountLevel = 10;
         maxBubblePowerLevel = 10;
         maxMoveSpeedLevel = 10;
         //set initial stats : movementspeed,bubble count, bubble power
-        CallChangeCharacterBaseStatLevelsServerRpc(3, 2, 2);
+        ChangeCharacterBaseStatLevels(3, 2, 2);
 
 
         //Set info based on mapdata if exist.
@@ -190,16 +192,6 @@ public class PlayerCharacter : NetworkBehaviour
     {
         if (MapData.Instance != null)
         {
-            //spawnPosition
-            foreach (SpawnPoint spawnPoint in MapData.Instance.GetSpawnPoints())
-            {
-                if (spawnPoint.GetIsTaken() == false && spawnPoint.GetTeamNumber() == teamNumber)
-                {
-                    spawnPosition = spawnPoint.transform.position;
-                    gameObject.transform.position = spawnPosition;
-                }
-            }
-
             //over map property: gravity
             gravityAcc = MapData.Instance.GetGlobalGravityAcc();
             gravityMaxSpeed = MapData.Instance.GetGlobalGravityMaxSpeed();
@@ -207,15 +199,28 @@ public class PlayerCharacter : NetworkBehaviour
         }
         else
         {
-            
-            spawnPosition = Vector3.zero;
-
             gravityAcc = -100f;
             gravityMaxSpeed = -10f;
         }
     }
 
-   
+    
+
+    public void SetSpawnPointFromMapData()
+    {
+        if (MapData.Instance != null)
+        {
+            spawnPosition = MapData.Instance.GetUnoccupiedSpawnPointPosition(teamNumber.Value);
+            
+        }
+        else
+        {
+            Debug.Log("mapdata is null");
+        }
+      
+    }
+
+
     private void Update()
     {
         if (IsServer)
@@ -263,7 +268,7 @@ public class PlayerCharacter : NetworkBehaviour
         //layerMaskIgnore = 1 << layerNumber;
 
 
-        float moveMaxDistance = baseMoveSpeed * currentMoveSpeedLevel * Time.deltaTime;
+        float moveMaxDistance = (baseMoveSpeed * (1+ (0.5f * currentMoveSpeedLevel))) * Time.deltaTime;
 
         //get movement input
         Vector2 inputVector = Vector3.zero;
@@ -545,6 +550,9 @@ public class PlayerCharacter : NetworkBehaviour
     private bool isEliminated;
     private bool canRespawn;
     */
+
+
+    //Disables are client sided
     public int GetMoveDisableStack()
     {
         return moveDisableStack;
@@ -605,7 +613,7 @@ public class PlayerCharacter : NetworkBehaviour
 
 
 
-
+    //invokes are server sided
     public void InvokeKill()
     {
         OnKill?.Invoke(this, EventArgs.Empty);
@@ -666,6 +674,9 @@ public class PlayerCharacter : NetworkBehaviour
         if (!IsOwner) return;
         transform.position = newPosition;
     }
+
+    
+
 
     public override void OnDestroy()
     {

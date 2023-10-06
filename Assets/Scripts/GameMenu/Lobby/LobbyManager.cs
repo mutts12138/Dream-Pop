@@ -638,14 +638,43 @@ public class LobbyManager : MonoBehaviour
     //both host and client use this to return to lobby
     public void ReturnToLobbyRoom()
     {
-        SceneLoader.Load(SceneLoader.Scene.Lobby);
-        //only when server is shutdown can you return to lobby room, so reset server code and server status
-        if(isLobbyHost)
+        //clean up
+        
+        if (ServerManager.Instance != null)
+        {
+            Destroy(ServerManager.Instance.gameObject);
+        }
+        if (NetworkManager.Singleton != null)
+        {
+            Destroy(NetworkManager.Singleton.gameObject);
+        }
+        if (WaitingRoomManager.Instance != null)
+        {
+            Destroy(WaitingRoomManager.Instance.gameObject);
+        }
+        if (GameMultiplayer.Instance != null)
+        {
+            Destroy(GameMultiplayer.Instance.gameObject);
+        }
+        if (GameManager.Instance != null)
+        {
+            Destroy(GameManager.Instance.gameObject);
+        }
+
+        if (isLobbyHost)
         {
             UpdateRelayServerCode(null);
             UpdateServerStatus("NotRunning");
         }
+
+        Invoke(nameof(LoadLobbyScene), 1);
         
+        //only when server is shutdown can you return to lobby room, so reset server code and server status
+    }
+
+    private void LoadLobbyScene()
+    {
+        SceneLoader.Load(SceneLoader.Scene.Lobby);
     }
 
     public async void LeaveLobby()

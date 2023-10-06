@@ -207,7 +207,7 @@ public class DreamBubble : NetworkBehaviour, ActivateByDreamPop
         Ray rayBelow = new Ray(offsetTransformPosition, new Vector3(0,-1,0));
         
 
-        Ray[] ray4Directions = { rayUp, rayDown, rayLeft, rayRight, rayTop, rayBelow};
+        Ray[] ray4Directions = { rayUp, rayDown, rayLeft, rayRight};
 
         int DBLayerNumber = 6;
         int BlockLayer2Number = 9;
@@ -216,7 +216,7 @@ public class DreamBubble : NetworkBehaviour, ActivateByDreamPop
         int finalMask = layerMask1 | layerMask2;
 
 
-        explosionRanges = new float[6];
+        explosionRanges = new float[4];
 
         //raycast in 6 directions, get explosionRange[] for visual and actual hitbox, pop dreambubbles hit
         int counter = 0;
@@ -385,6 +385,7 @@ public class DreamBubble : NetworkBehaviour, ActivateByDreamPop
 
     private void HandleGravity()
     {
+        if (isPopped) return;
         float gravity = gravityScale * Time.deltaTime;
         if (!Physics.Raycast(new Vector3(transform.position.x, transform.position.y + 0.1f, transform.position.z), Vector3.down, out RaycastHit raycastHit, 1f))
         {

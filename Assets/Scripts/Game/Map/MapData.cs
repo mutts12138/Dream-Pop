@@ -59,4 +59,36 @@ public class MapData : MonoBehaviour
     {
         return roundTime;
     }
+
+    public Vector3 GetUnoccupiedSpawnPointPosition(int teamNumber)
+    {
+        foreach (SpawnPoint spawnPoint in spawnPoints)
+        {
+            if(spawnPoint.associatedTeamNumber == 0)
+            {
+                int spawnPointGroupNumber = spawnPoint.GetGroupNumber();
+                foreach (SpawnPoint spawnPoint2 in spawnPoints)
+                {
+                    if(spawnPoint2.GetGroupNumber() == spawnPointGroupNumber)
+                    {
+                        spawnPoint2.SetAssociatedTeamNumber(teamNumber);
+                    }
+                      
+                }
+                return spawnPoint.SetIsTakenAndReturnPosition();
+
+            }
+            else
+            {
+                if(spawnPoint.isTaken == false && spawnPoint.associatedTeamNumber == teamNumber)
+                {
+                    return spawnPoint.SetIsTakenAndReturnPosition();
+                }
+            }
+
+        }
+
+        
+        return Vector3.zero;
+    }
 }

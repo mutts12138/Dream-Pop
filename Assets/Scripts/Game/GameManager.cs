@@ -18,6 +18,7 @@ public class GameManager : NetworkBehaviour
 
     private NetworkVariable<GameStates> gameState;
 
+    [SerializeField] float scoreboardDisplayTime;
 
     public event EventHandler OnPlayerCharacterSpawned;
 
@@ -160,7 +161,7 @@ public class GameManager : NetworkBehaviour
         //display scoreboard for a few seconds
         //return to lobby
         if (!IsServer) return;
-        StartCoroutine(DisplayScoreBoardThenReturnToLobby(10f));
+        StartCoroutine(DisplayScoreBoardThenReturnToLobby(scoreboardDisplayTime));
     }
 
     IEnumerator DisplayScoreBoardThenReturnToLobby(float displayTime)
